@@ -1,20 +1,39 @@
+import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import LoginScreen from './src/screens/LoginScreen';
+import DashboardScreen from './src/screens/DashboardScreen';
+import InviteCaretakerScreen from './src/screens/InviteCaretakerScreen';
 
 export default function App() {
+  const [user, setUser] = useState(null);
+  const [screen, setScreen] = useState('dashboard');
+
+  const handleLoginSuccess = (loggedInUser) => {
+    setUser(loggedInUser);
+    setScreen('dashboard');
+  };
+
+  if (!user) {
+    return (
+      <>
+        <LoginScreen onLoginSuccess={handleLoginSuccess} />
+        <StatusBar style="auto" />
+      </>
+    );
+  }
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
+    <>
+      {screen === 'dashboard' && (
+        <DashboardScreen
+          user={user}
+          onNavigateInvite={() => setScreen('invite')}
+        />
+      )}
+      {screen === 'invite' && (
+        <InviteCaretakerScreen onBack={() => setScreen('dashboard')} />
+      )}
       <StatusBar style="auto" />
-    </View>
+    </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
