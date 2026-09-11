@@ -10,9 +10,12 @@ import {
   ScrollView,
 } from 'react-native';
 import { propertyAPI, caretakerAPI } from '../services/api';
-import { Colors, Spacing } from '../constants/theme';
+import { Spacing } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 export default function InviteCaretakerScreen({ onBack }) {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -90,7 +93,7 @@ export default function InviteCaretakerScreen({ onBack }) {
       <Text style={styles.sectionTitle}>Assign Properties (optional)</Text>
 
       {loadingProps ? (
-        <ActivityIndicator color={Colors.primary} />
+        <ActivityIndicator color={colors.primary} />
       ) : properties.length === 0 ? (
         <Text style={styles.emptyText}>No properties to assign yet.</Text>
       ) : (
@@ -134,10 +137,10 @@ export default function InviteCaretakerScreen({ onBack }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   content: {
     padding: Spacing.four,
@@ -145,12 +148,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: Colors.text,
+    color: colors.text,
     marginBottom: Spacing.four,
   },
   input: {
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: colors.border,
     borderRadius: 8,
     padding: Spacing.three,
     marginBottom: Spacing.three,
@@ -159,35 +162,35 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.text,
+    color: colors.text,
     marginTop: Spacing.two,
     marginBottom: Spacing.two,
   },
   propertyOption: {
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: colors.border,
     borderRadius: 8,
     padding: Spacing.three,
     marginBottom: Spacing.two,
   },
   propertyOptionSelected: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   propertyOptionText: {
     fontSize: 15,
-    color: Colors.text,
+    color: colors.text,
   },
   propertyOptionTextSelected: {
     color: '#fff',
     fontWeight: '600',
   },
   emptyText: {
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginBottom: Spacing.three,
   },
   button: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     borderRadius: 8,
     padding: Spacing.three,
     alignItems: 'center',
@@ -204,7 +207,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.two,
   },
   backButtonText: {
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     fontSize: 14,
   },
 });

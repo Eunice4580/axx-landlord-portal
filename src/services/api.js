@@ -40,10 +40,10 @@ export const apiCall = async (endpoint, options = {}) => {
 };
 
 export const authAPI = {
-  login: (email, password) =>
+  login: (email, password, role) =>
     apiCall('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password, role: 'landlord' }),
+      body: JSON.stringify({ email, password, role }),
       useAuth: false,
     }),
   logout: () => apiCall('/auth/logout', { method: 'POST' }),
@@ -88,4 +88,54 @@ export const caretakerAPI = {
     }),
   getMyCaretakers: () => apiCall('/caretaker/my-caretakers'),
   getMyAssignedProperties: () => apiCall('/caretaker/my-properties'),
+};
+
+export const createPropertyWithImages = async (formDataFields, imageUris) => {
+  const token = await (await import('expo-secure-store')).getItemAsync('token');
+  const form = new FormData();
+
+  Object.entries(formDataFields).forEach(([key, value]) => {
+    form.append(key, value);
+  });
+
+  imageUris.forEach((uri, index) => {
+    form.append('images', {
+      uri,
+      name: `photo_${index}.jpg`,
+      type: 'image/jpeg',
+    });
+  });
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_URL}/properties`);
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+    xhr.onload = () => {
+      try {
+        const data = JSON.parse(xhr.responseText);
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(data);
+        } else {
+          reject(new Error(data.error || 'Failed to create property'));
+        }
+      } catch (e) {
+        reject(new Error('Failed to parse server response'));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Network error while uploading'));
+
+    xhr.send(form);
+  });
+};
+
+export const updateBookedUnits = (propertyId, change) =>
+  apiCall(`/properties/${propertyId}/book`, {
+    method: 'PATCH',
+    body: JSON.stringify({ change }),
+  });
+
+export const paymentAPI = {
+  getHistory: () => apiCall('/payment/history'),
 };

@@ -10,11 +10,13 @@ import {
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { authAPI } from '../services/api';
-import { Colors, Spacing } from '../constants/theme';
-
-const ALLOWED_ROLES = ['landlord', 'caretaker'];
+import { Spacing } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 export default function LoginScreen({ onLoginSuccess }) {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+  const [selectedRole, setSelectedRole] = useState('landlord');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,17 +29,17 @@ export default function LoginScreen({ onLoginSuccess }) {
 
     setLoading(true);
     try {
-      const response = await authAPI.login(email, password);
+      const response = await authAPI.login(email, password, selectedRole);
 
       if (!response.token || !response.user) {
         Alert.alert('Login failed', 'No token received.');
         return;
       }
 
-      if (!ALLOWED_ROLES.includes(response.user.role)) {
+      if (response.user.role !== selectedRole) {
         Alert.alert(
           'Access denied',
-          'This app is only for landlords and caretakers.'
+          `This account is not registered as a ${selectedRole}.`
         );
         return;
       }
@@ -54,7 +56,42 @@ export default function LoginScreen({ onLoginSuccess }) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>AXX Landlord Portal</Text>
-      <Text style={styles.subtitle}>Sign in to manage your properties</Text>
+      <Text style={styles.subtitle}>Sign in to continue</Text>
+
+      <View style={styles.roleSwitch}>
+        <TouchableOpacity
+          style={[
+            styles.roleOption,
+            selectedRole === 'landlord' && styles.roleOptionActive,
+          ]}
+          onPress={() => setSelectedRole('landlord')}
+        >
+          <Text
+            style={[
+              styles.roleOptionText,
+              selectedRole === 'landlord' && styles.roleOptionTextActive,
+            ]}
+          >
+            Landlord
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.roleOption,
+            selectedRole === 'caretaker' && styles.roleOptionActive,
+          ]}
+          onPress={() => setSelectedRole('caretaker')}
+        >
+          <Text
+            style={[
+              styles.roleOptionText,
+              selectedRole === 'caretaker' && styles.roleOptionTextActive,
+            ]}
+          >
+            Caretaker
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       <TextInput
         style={styles.input}
@@ -80,43 +117,67 @@ export default function LoginScreen({ onLoginSuccess }) {
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.buttonText}>Sign In</Text>
+          <Text style={styles.buttonText}>Sign In as {selectedRole === 'landlord' ? 'Landlord' : 'Caretaker'}</Text>
         )}
       </TouchableOpacity>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
     padding: Spacing.four,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   title: {
     fontSize: 26,
     fontWeight: 'bold',
-    color: Colors.text,
+    color: colors.text,
     textAlign: 'center',
     marginBottom: Spacing.one,
   },
   subtitle: {
     fontSize: 14,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: Spacing.five,
+    marginBottom: Spacing.four,
+  },
+  roleSwitch: {
+    flexDirection: 'row',
+    backgroundColor: colors.backgroundElement,
+    borderRadius: 8,
+    padding: 4,
+    marginBottom: Spacing.four,
+  },
+  roleOption: {
+    flex: 1,
+    paddingVertical: Spacing.two,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  roleOptionActive: {
+    backgroundColor: colors.primary,
+  },
+  roleOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  roleOptionTextActive: {
+    color: '#fff',
   },
   input: {
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: colors.border,
     borderRadius: 8,
     padding: Spacing.three,
     marginBottom: Spacing.three,
     fontSize: 16,
   },
   button: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     borderRadius: 8,
     padding: Spacing.three,
     alignItems: 'center',
