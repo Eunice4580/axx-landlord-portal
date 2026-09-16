@@ -214,3 +214,33 @@ export const resetPasswordAPI = (token, password) =>
     body: JSON.stringify({ password }),
     useAuth: false,
   });
+
+export const profileUpdateAPI = {
+  changePassword: (currentPassword, newPassword) =>
+    apiCall('/profile/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
+  changeEmail: (newEmail, password) =>
+    apiCall('/profile/change-email', {
+      method: 'POST',
+      body: JSON.stringify({ newEmail, password }),
+    }),
+  updateContact: (name, phone, avatarUri) => {
+    const form = new FormData();
+    if (name) form.append('name', name);
+    if (phone) form.append('phone', phone);
+    if (avatarUri) {
+      form.append('avatar', {
+        uri: avatarUri,
+        name: 'avatar.jpg',
+        type: 'image/jpeg',
+      });
+    }
+    return apiCall('/profile', {
+      method: 'PATCH',
+      body: form,
+      headers: {},
+    });
+  },
+};

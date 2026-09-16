@@ -7,11 +7,15 @@ import {
   ScrollView,
   SafeAreaView,
   Switch,
+  Image,
 } from 'react-native';
 import { Spacing, BorderRadius, FontSize } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
 import InviteCaretakerScreen from './InviteCaretakerScreen';
 import MyCaretakersScreen from './MyCaretakersScreen';
+import ChangePasswordScreen from './ChangePasswordScreen';
+import ChangeEmailScreen from './ChangeEmailScreen';
+import ChangeContactScreen from './ChangeContactScreen';
 
 const Row = ({ label, value, colors }) => (
   <View style={{ paddingVertical: Spacing.two, borderBottomWidth: 1, borderBottomColor: colors.border }}>
@@ -27,6 +31,10 @@ const Row = ({ label, value, colors }) => (
 export default function SettingsScreen({ user, onLogout }) {
   const [showInvite, setShowInvite] = useState(false);
   const [showManage, setShowManage] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showChangeEmail, setShowChangeEmail] = useState(false);
+  const [showChangeContact, setShowChangeContact] = useState(false);
+  const [localUser, setLocalUser] = useState(user);
   const { colors, isDark, toggleTheme } = useTheme();
   const styles = getStyles(colors);
 
@@ -38,7 +46,30 @@ export default function SettingsScreen({ user, onLogout }) {
     return <MyCaretakersScreen onBack={() => setShowManage(false)} />;
   }
 
-  const initials = (user?.name || 'L')
+  if (showChangePassword) {
+    return <ChangePasswordScreen onBack={() => setShowChangePassword(false)} />;
+  }
+
+  if (showChangeEmail) {
+    return (
+      <ChangeEmailScreen
+        onBack={() => setShowChangeEmail(false)}
+        onEmailChanged={(updated) => setLocalUser(updated)}
+      />
+    );
+  }
+
+  if (showChangeContact) {
+    return (
+      <ChangeContactScreen
+        user={localUser}
+        onBack={() => setShowChangeContact(false)}
+        onUpdated={(updated) => setLocalUser(updated)}
+      />
+    );
+  }
+
+  const initials = (localUser?.name || 'L')
     .split(' ')
     .map(n => n[0])
     .join('')
@@ -52,13 +83,17 @@ export default function SettingsScreen({ user, onLogout }) {
 
         {/* Profile header */}
         <View style={styles.profileCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initials}</Text>
-          </View>
+          {localUser?.profileImage ? (
+            <Image source={{ uri: localUser.profileImage }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{initials}</Text>
+            </View>
+          )}
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{user?.name || 'Landlord'}</Text>
+            <Text style={styles.profileName}>{localUser?.name || 'Landlord'}</Text>
             <Text style={styles.profileRole}>
-              {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Landlord'}
+              {localUser?.role ? localUser.role.charAt(0).toUpperCase() + localUser.role.slice(1) : 'Landlord'}
             </Text>
           </View>
         </View>
@@ -66,14 +101,14 @@ export default function SettingsScreen({ user, onLogout }) {
         {/* Account details */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account Details</Text>
-          <Row label="Full Name" value={user?.name} colors={colors} />
-          <Row label="Email" value={user?.email} colors={colors} />
-          <Row label="Phone" value={user?.phone} colors={colors} />
-          <Row label="Role" value={user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : ''} colors={colors} />
+          <Row label="Full Name" value={localUser?.name} colors={colors} />
+          <Row label="Email" value={localUser?.email} colors={colors} />
+          <Row label="Phone" value={localUser?.phone} colors={colors} />
+          <Row label="Role" value={localUser?.role ? localUser.role.charAt(0).toUpperCase() + localUser.role.slice(1) : ''} colors={colors} />
         </View>
 
         {/* Actions */}
-        {user?.role === 'landlord' && (
+        {localUser?.role === 'landlord' && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Team</Text>
             <TouchableOpacity style={styles.menuRow} onPress={() => setShowInvite(true)}>
@@ -86,6 +121,23 @@ export default function SettingsScreen({ user, onLogout }) {
             </TouchableOpacity>
           </View>
         )}
+
+        {/* Account actions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Account</Text>
+          <TouchableOpacity style={styles.menuRow} onPress={() => setShowChangeContact(true)}>
+            <Text style={styles.menuRowText}>Change Contact Info</Text>
+            <Text style={styles.menuRowChevron}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuRow} onPress={() => setShowChangeEmail(true)}>
+            <Text style={styles.menuRowText}>Change Email</Text>
+            <Text style={styles.menuRowChevron}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.menuRow, { borderBottomWidth: 0 }]} onPress={() => setShowChangePassword(true)}>
+            <Text style={styles.menuRowText}>Change Password</Text>
+            <Text style={styles.menuRowChevron}>›</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* App info */}
         <View style={styles.section}>

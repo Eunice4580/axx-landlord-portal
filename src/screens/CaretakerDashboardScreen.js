@@ -11,16 +11,27 @@ import {
   Image,
   SafeAreaView,
   ScrollView,
+  Image,
 } from 'react-native';
 import { caretakerAPI, updateBookedUnits } from '../services/api';
 import { Spacing, BorderRadius, FontSize } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
+import ChangePasswordScreen from './ChangePasswordScreen';
+import ChangeEmailScreen from './ChangeEmailScreen';
+import ChangeContactScreen from './ChangeContactScreen';
+import { Switch } from 'react-native';
 
 export default function CaretakerDashboardScreen({ user, onLogout }) {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const { colors } = useTheme();
+  const [showSettings, setShowSettings] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showChangeEmail, setShowChangeEmail] = useState(false);
+  const [showChangeContact, setShowChangeContact] = useState(false);
+  const [localUser, setLocalUser] = useState(user);
+  const { colors, isDark, toggleTheme } = useTheme();
   const styles = getStyles(colors);
 
   const loadProperties = useCallback(async () => {
@@ -47,6 +58,69 @@ export default function CaretakerDashboardScreen({ user, onLogout }) {
       Alert.alert('Failed', error.message || 'Could not update unit status.');
     }
   };
+
+  if (showChangePassword) {
+    return <ChangePasswordScreen onBack={() => setShowChangePassword(false)} />;
+  }
+
+  if (showChangeEmail) {
+    return (
+      <ChangeEmailScreen
+        onBack={() => setShowChangeEmail(false)}
+        onEmailChanged={(updated) => setLocalUser(updated)}
+      />
+    );
+  }
+
+  if (showChangeContact) {
+    return (
+      <ChangeContactScreen
+        user={localUser}
+        onBack={() => setShowChangeContact(false)}
+        onUpdated={(updated) => setLocalUser(updated)}
+      />
+    );
+  }
+
+  if (showSettings) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <ScrollView contentContainerStyle={{ padding: Spacing.three }}>
+          <TouchableOpacity onPress={() => setShowSettings(false)}>
+            <Text style={{ color: colors.primary, fontSize: 15, marginBottom: Spacing.three }}>← Back</Text>
+          </TouchableOpacity>
+          <Text style={{ fontSize: FontSize['2xl'], fontWeight: '700', color: colors.text, marginBottom: Spacing.four }}>Settings</Text>
+
+          <View style={{ backgroundColor: colors.backgroundElement, borderRadius: BorderRadius.lg, padding: Spacing.three, marginBottom: Spacing.three, borderWidth: 1, borderColor: colors.border }}>
+            <TouchableOpacity style={styles.settingsRow} onPress={() => setShowChangeContact(true)}>
+              <Text style={styles.settingsRowText}>Change Contact Info</Text>
+              <Text style={styles.settingsRowChevron}>›</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.settingsRow} onPress={() => setShowChangeEmail(true)}>
+              <Text style={styles.settingsRowText}>Change Email</Text>
+              <Text style={styles.settingsRowChevron}>›</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.settingsRow, { borderBottomWidth: 0 }]} onPress={() => setShowChangePassword(true)}>
+              <Text style={styles.settingsRowText}>Change Password</Text>
+              <Text style={styles.settingsRowChevron}>›</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ backgroundColor: colors.backgroundElement, borderRadius: BorderRadius.lg, padding: Spacing.three, borderWidth: 1, borderColor: colors.border }}>
+            <View style={[styles.settingsRow, { borderBottomWidth: 0 }]}>
+              <Text style={styles.settingsRowText}>{isDark ? '🌙  Dark Mode' : '☀️  Light Mode'}</Text>
+              <Switch
+                value={isDark}
+                onValueChange={toggleTheme}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={'#fff'}
+              />
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   if (loading) {
     return (
@@ -131,12 +205,34 @@ export default function CaretakerDashboardScreen({ user, onLogout }) {
                 <Text style={styles.userName}>{user?.name || 'Caretaker'}</Text>
               </View>
               <View style={styles.headerRight}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{initials}</Text>
+                {localUser?.profileImage ? (
+                  <Image source={{ uri: localUser.profileImage }} style={styles.avatar} />
+                ) : (
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{initials}</Text>
+                  </View>
+                )}
+                <View>
+                  <TouchableOpacity style={styles.dotsBtn} onPress={() => setShowMenu((m) => !m)}>
+                    <Text style={styles.dotsBtnText}>⋮</Text>
+                  </TouchableOpacity>
+                  {showMenu && (
+                    <View style={styles.dropdown}>
+                      <TouchableOpacity
+                        style={styles.dropdownItem}
+                        onPress={() => { setShowMenu(false); setShowSettings(true); }}
+                      >
+                        <Text style={styles.dropdownItemText}>Settings</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.dropdownItem, { borderBottomWidth: 0 }]}
+                        onPress={() => { setShowMenu(false); onLogout(); }}
+                      >
+                        <Text style={[styles.dropdownItemText, { color: colors.danger }]}>Log Out</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
-                <TouchableOpacity style={styles.logoutBtn} onPress={onLogout}>
-                  <Text style={styles.logoutBtnText}>Log Out</Text>
-                </TouchableOpacity>
               </View>
             </View>
 
@@ -195,8 +291,46 @@ const getStyles = (colors) => StyleSheet.create({
   roleBadgeText: { color: colors.primary, fontSize: FontSize.xs, fontWeight: '700' },
   userName: { fontSize: FontSize['2xl'], fontWeight: '700', color: colors.text },
   headerRight: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+  },
+  dotsBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dotsBtnText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  dropdown: {
+    position: 'absolute',
+    top: 38,
+    right: 0,
+    backgroundColor: colors.backgroundElement,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    minWidth: 130,
+    zIndex: 10,
+    elevation: 10,
+  },
+  dropdownItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  dropdownItemText: {
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+    color: colors.text,
   },
   avatar: {
     width: 42,
@@ -207,6 +341,35 @@ const getStyles = (colors) => StyleSheet.create({
     alignItems: 'center',
   },
   avatarText: { color: '#fff', fontWeight: '700', fontSize: FontSize.md },
+  settingsBtn: {
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  settingsBtnText: {
+    color: colors.primary,
+    fontSize: FontSize.xs,
+    fontWeight: '700',
+  },
+  settingsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: Spacing.two,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  settingsRowText: {
+    fontSize: FontSize.md,
+    color: colors.text,
+    fontWeight: '500',
+  },
+  settingsRowChevron: {
+    fontSize: 22,
+    color: colors.textMuted,
+  },
   logoutBtn: {
     borderWidth: 1,
     borderColor: colors.danger,
