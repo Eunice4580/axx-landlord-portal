@@ -25,6 +25,7 @@ export default function LoginScreen({ onLoginSuccess }) {
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   if (showForgotPassword) {
     return <ForgotPasswordScreen onBack={() => setShowForgotPassword(false)} />;
@@ -113,16 +114,24 @@ export default function LoginScreen({ onLoginSuccess }) {
 
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Password</Text>
-            <TextInput
-              style={[styles.input, passwordFocused && styles.inputFocused]}
-              placeholder="Enter your password"
-              placeholderTextColor={colors.textMuted}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              onFocus={() => setPasswordFocused(true)}
-              onBlur={() => setPasswordFocused(false)}
-            />
+            <View style={styles.passwordRow}>
+              <TextInput
+                style={[styles.input, styles.passwordInput, passwordFocused && styles.inputFocused]}
+                placeholder="Enter your password"
+                placeholderTextColor={colors.textMuted}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                onFocus={() => setPasswordFocused(true)}
+                onBlur={() => setPasswordFocused(false)}
+              />
+              <TouchableOpacity
+                style={styles.showToggle}
+                onPress={() => setShowPassword((p) => !p)}
+              >
+                <Text style={styles.showToggleText}>{showPassword ? 'Hide' : 'Show'}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <TouchableOpacity
@@ -256,6 +265,22 @@ const getStyles = (colors) => StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  passwordRow: {
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  passwordInput: {
+    paddingRight: 60,
+  },
+  showToggle: {
+    position: 'absolute',
+    right: 14,
+  },
+  showToggleText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '600',
   },
   forgotLink: {
     alignItems: 'center',
