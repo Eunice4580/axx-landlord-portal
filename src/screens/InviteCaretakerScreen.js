@@ -8,9 +8,10 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
+  SafeAreaView,
 } from 'react-native';
 import { propertyAPI, caretakerAPI } from '../services/api';
-import { Spacing } from '../constants/theme';
+import { Spacing, BorderRadius, FontSize } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
 
 export default function InviteCaretakerScreen({ onBack }) {
@@ -27,14 +28,14 @@ export default function InviteCaretakerScreen({ onBack }) {
   useEffect(() => {
     propertyAPI
       .getMyProperties()
-      .then((data) => setProperties(Array.isArray(data) ? data : []))
-      .catch((err) => console.error('Failed to load properties:', err.message))
+      .then(data => setProperties(Array.isArray(data) ? data : []))
+      .catch(err => console.error('Failed to load properties:', err.message))
       .finally(() => setLoadingProps(false));
   }, []);
 
   const toggleProperty = (id) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
     );
   };
 
@@ -43,19 +44,13 @@ export default function InviteCaretakerScreen({ onBack }) {
       Alert.alert('Missing info', 'Please fill in name, email, and phone.');
       return;
     }
-
     setLoading(true);
     try {
-      const response = await caretakerAPI.inviteCaretaker(
-        name,
-        email,
-        phone,
-        selectedIds
-      );
+      const response = await caretakerAPI.inviteCaretaker(name, email, phone, selectedIds);
       Alert.alert(
         'Caretaker Invited',
-        `${name} has been added.\n\nTemporary password: ${response.tempPassword}\n\nShare this with them securely so they can log in.`,
-        [{ text: 'OK', onPress: onBack }]
+        `${name} has been added.\n\nTemporary password: ${response.tempPassword}\n\nShare this with them securely.`,
+        [{ text: 'Done', onPress: onBack }]
       );
     } catch (error) {
       Alert.alert('Invite failed', error.message || 'Something went wrong.');
@@ -65,149 +60,208 @@ export default function InviteCaretakerScreen({ onBack }) {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Invite Caretaker</Text>
+    <SafeAreaView style={styles.safe}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Back nav */}
+        <TouchableOpacity style={styles.backBtn} onPress={onBack}>
+          <Text style={styles.backBtnText}>← Back</Text>
+        </TouchableOpacity>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Caretaker's full name"
-        value={name}
-        onChangeText={setName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Phone number"
-        value={phone}
-        onChangeText={setPhone}
-        keyboardType="phone-pad"
-      />
+        <Text style={styles.pageTitle}>Invite Caretaker</Text>
+        <Text style={styles.pageSubtitle}>Add a caretaker to help manage your properties.</Text>
 
-      <Text style={styles.sectionTitle}>Assign Properties (optional)</Text>
+        {/* Form */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Caretaker Details</Text>
 
-      {loadingProps ? (
-        <ActivityIndicator color={colors.primary} />
-      ) : properties.length === 0 ? (
-        <Text style={styles.emptyText}>No properties to assign yet.</Text>
-      ) : (
-        properties.map((p) => (
-          <TouchableOpacity
-            key={p._id}
-            style={[
-              styles.propertyOption,
-              selectedIds.includes(p._id) && styles.propertyOptionSelected,
-            ]}
-            onPress={() => toggleProperty(p._id)}
-          >
-            <Text
-              style={[
-                styles.propertyOptionText,
-                selectedIds.includes(p._id) && styles.propertyOptionTextSelected,
-              ]}
-            >
-              {p.title}
-            </Text>
-          </TouchableOpacity>
-        ))
-      )}
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>Full Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. John Kamau"
+              placeholderTextColor={colors.textMuted}
+              value={name}
+              onChangeText={setName}
+            />
+          </View>
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={handleInvite}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Send Invite</Text>
-        )}
-      </TouchableOpacity>
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>Email Address</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="caretaker@email.com"
+              placeholderTextColor={colors.textMuted}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+          </View>
 
-      <TouchableOpacity style={styles.backButton} onPress={onBack}>
-        <Text style={styles.backButtonText}>Cancel</Text>
-      </TouchableOpacity>
-    </ScrollView>
+          <View style={[styles.field, { marginBottom: 0 }]}>
+            <Text style={styles.fieldLabel}>Phone Number</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="07XXXXXXXX"
+              placeholderTextColor={colors.textMuted}
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+            />
+          </View>
+        </View>
+
+        {/* Property assignment */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Assign Properties (optional)</Text>
+          <Text style={styles.sectionHint}>Select which properties this caretaker will manage.</Text>
+
+          {loadingProps ? (
+            <ActivityIndicator color={colors.primary} style={{ marginTop: Spacing.two }} />
+          ) : properties.length === 0 ? (
+            <Text style={styles.emptyText}>No properties to assign yet.</Text>
+          ) : (
+            properties.map(p => {
+              const selected = selectedIds.includes(p._id);
+              return (
+                <TouchableOpacity
+                  key={p._id}
+                  style={[styles.propertyRow, selected && styles.propertyRowSelected]}
+                  onPress={() => toggleProperty(p._id)}
+                >
+                  <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
+                    {selected && <Text style={styles.checkmark}>✓</Text>}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.propertyName, selected && styles.propertyNameSelected]}>
+                      {p.title}
+                    </Text>
+                    {p.location && (
+                      <Text style={styles.propertyLocation}>{p.location}</Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })
+          )}
+        </View>
+
+        <TouchableOpacity
+          style={[styles.submitBtn, loading && { opacity: 0.6 }]}
+          onPress={handleInvite}
+          disabled={loading}
+        >
+          {loading
+            ? <ActivityIndicator color="#fff" />
+            : <Text style={styles.submitBtnText}>Send Invite</Text>
+          }
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.cancelBtn} onPress={onBack}>
+          <Text style={styles.cancelBtnText}>Cancel</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const getStyles = (colors) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: Spacing.four,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
+  safe: { flex: 1, backgroundColor: colors.background },
+  content: { padding: Spacing.three, paddingBottom: Spacing.six },
+  backBtn: { marginBottom: Spacing.three },
+  backBtnText: { color: colors.primary, fontSize: FontSize.md, fontWeight: '600' },
+  pageTitle: {
+    fontSize: FontSize['3xl'],
+    fontWeight: '700',
     color: colors.text,
+    marginBottom: 4,
+  },
+  pageSubtitle: {
+    fontSize: FontSize.sm,
+    color: colors.textSecondary,
     marginBottom: Spacing.four,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
+  section: {
+    backgroundColor: colors.backgroundElement,
+    borderRadius: BorderRadius.lg,
     padding: Spacing.three,
     marginBottom: Spacing.three,
-    fontSize: 16,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text,
-    marginTop: Spacing.two,
-    marginBottom: Spacing.two,
-  },
-  propertyOption: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
-    padding: Spacing.three,
+  },
+  sectionTitle: {
+    fontSize: FontSize.md,
+    fontWeight: '700',
+    color: colors.text,
     marginBottom: Spacing.two,
   },
-  propertyOptionSelected: {
+  sectionHint: {
+    fontSize: FontSize.sm,
+    color: colors.textSecondary,
+    marginBottom: Spacing.three,
+  },
+  field: { marginBottom: Spacing.two },
+  fieldLabel: {
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginBottom: Spacing.one,
+  },
+  input: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.two + 4,
+    fontSize: FontSize.md,
+    color: colors.text,
+  },
+  propertyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.two,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: Spacing.two,
+    marginBottom: Spacing.two,
+    backgroundColor: colors.background,
+  },
+  propertyRowSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '11',
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: colors.border,
+    marginRight: Spacing.three,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxSelected: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
-  propertyOptionText: {
-    fontSize: 15,
-    color: colors.text,
-  },
-  propertyOptionTextSelected: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  emptyText: {
-    color: colors.textSecondary,
-    marginBottom: Spacing.three,
-  },
-  button: {
+  checkmark: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  propertyName: { fontSize: FontSize.md, color: colors.text, fontWeight: '500' },
+  propertyNameSelected: { color: colors.primary, fontWeight: '600' },
+  propertyLocation: { fontSize: FontSize.sm, color: colors.textSecondary, marginTop: 2 },
+  emptyText: { color: colors.textSecondary, fontSize: FontSize.sm },
+  submitBtn: {
     backgroundColor: colors.primary,
-    borderRadius: 8,
-    padding: Spacing.three,
-    alignItems: 'center',
-    marginTop: Spacing.four,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  backButton: {
+    borderRadius: BorderRadius.md,
     padding: Spacing.three,
     alignItems: 'center',
     marginTop: Spacing.two,
   },
-  backButtonText: {
-    color: colors.textSecondary,
-    fontSize: 14,
+  submitBtnText: { color: '#fff', fontSize: FontSize.md, fontWeight: '700' },
+  cancelBtn: {
+    padding: Spacing.three,
+    alignItems: 'center',
+    marginTop: Spacing.two,
   },
+  cancelBtnText: { color: colors.textSecondary, fontSize: FontSize.md },
 });

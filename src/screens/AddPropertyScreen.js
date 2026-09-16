@@ -9,16 +9,18 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  SafeAreaView,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { createPropertyWithImages } from '../services/api';
-import { Spacing } from '../constants/theme';
+import { Spacing, BorderRadius, FontSize } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
 import { AMENITIES_LIST, PROPERTY_TYPES } from '../constants/propertyOptions';
 
 export default function AddPropertyScreen() {
   const { colors } = useTheme();
   const styles = getStyles(colors);
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
@@ -33,10 +35,8 @@ export default function AddPropertyScreen() {
   const [loading, setLoading] = useState(false);
 
   const toggleAmenity = (amenity) => {
-    setSelectedAmenities((prev) =>
-      prev.includes(amenity)
-        ? prev.filter((a) => a !== amenity)
-        : [...prev, amenity]
+    setSelectedAmenities(prev =>
+      prev.includes(amenity) ? prev.filter(a => a !== amenity) : [...prev, amenity]
     );
   };
 
@@ -46,34 +46,32 @@ export default function AddPropertyScreen() {
       Alert.alert('Permission needed', 'Please allow access to your photos.');
       return;
     }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
       quality: 0.7,
     });
-
     if (!result.canceled) {
-      const uris = result.assets.map((a) => a.uri);
-      setImages((prev) => [...prev, ...uris].slice(0, 10));
+      const uris = result.assets.map(a => a.uri);
+      setImages(prev => [...prev, ...uris].slice(0, 10));
     }
   };
 
   const removeImage = (index) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
+    setImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
     if (!title || !description || !location || !price || !propertyType || !county) {
-      Alert.alert('Missing info', 'Please fill in all required fields.');
+      Alert.alert('Incomplete form', 'Please fill in all required fields.');
       return;
     }
     if (images.length === 0) {
-      Alert.alert('Missing images', 'Please add at least one photo.');
+      Alert.alert('Photos required', 'Please add at least one photo.');
       return;
     }
     if (selectedAmenities.length === 0) {
-      Alert.alert('Missing amenities', 'Please select at least one amenity.');
+      Alert.alert('Amenities required', 'Please select at least one amenity.');
       return;
     }
 
@@ -94,184 +92,304 @@ export default function AddPropertyScreen() {
         },
         images
       );
-      Alert.alert('Success', 'Property added successfully!', [
-        { text: 'OK' },
-      ]);
+      Alert.alert('Success', 'Property submitted for review. You will be notified once approved.', [{ text: 'OK' }]);
+      // Reset form
+      setTitle(''); setDescription(''); setLocation(''); setCounty('');
+      setPrice(''); setPropertyType(''); setTotalUnits('1');
+      setBedrooms(''); setBathrooms(''); setSelectedAmenities([]); setImages([]);
     } catch (error) {
-      Alert.alert('Failed to add property', error.message || 'Something went wrong.');
+      Alert.alert('Failed', error.message || 'Something went wrong.');
     } finally {
       setLoading(false);
     }
   };
 
+  const Field = ({ label, required, children }) => (
+    <View style={styles.field}>
+      <Text style={styles.fieldLabel}>
+        {label} {required && <Text style={styles.required}>*</Text>}
+      </Text>
+      {children}
+    </View>
+  );
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Add Property</Text>
+    <SafeAreaView style={styles.safe}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Text style={styles.pageTitle}>Add Property</Text>
+        <Text style={styles.pageSubtitle}>Your listing will be reviewed before going live.</Text>
 
-      <Text style={styles.label}>Title *</Text>
-      <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="e.g. Modern 2BR Apartment" />
+        {/* Basic Info */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Basic Information</Text>
 
-      <Text style={styles.label}>Description *</Text>
-      <TextInput
-        style={[styles.input, styles.textArea]}
-        value={description}
-        onChangeText={setDescription}
-        placeholder="Describe the property..."
-        multiline
-      />
+          <Field label="Property Title" required>
+            <TextInput
+              style={styles.input}
+              value={title}
+              onChangeText={setTitle}
+              placeholder="e.g. Modern 2BR Apartment in Kilimani"
+              placeholderTextColor={colors.textMuted}
+            />
+          </Field>
 
-      <Text style={styles.label}>Location *</Text>
-      <TextInput style={styles.input} value={location} onChangeText={setLocation} placeholder="e.g. Kilimani, Nairobi" />
+          <Field label="Description" required>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Describe the property, surroundings, nearby amenities..."
+              placeholderTextColor={colors.textMuted}
+              multiline
+            />
+          </Field>
 
-      <Text style={styles.label}>County *</Text>
-      <TextInput style={styles.input} value={county} onChangeText={setCounty} placeholder="e.g. Nairobi" />
+          <Field label="Location / Street Address" required>
+            <TextInput
+              style={styles.input}
+              value={location}
+              onChangeText={setLocation}
+              placeholder="e.g. Kilimani, Nairobi"
+              placeholderTextColor={colors.textMuted}
+            />
+          </Field>
 
-      <Text style={styles.label}>Price (KES) *</Text>
-      <TextInput style={styles.input} value={price} onChangeText={setPrice} keyboardType="numeric" placeholder="e.g. 25000" />
+          <Field label="County" required>
+            <TextInput
+              style={styles.input}
+              value={county}
+              onChangeText={setCounty}
+              placeholder="e.g. Nairobi"
+              placeholderTextColor={colors.textMuted}
+            />
+          </Field>
 
-      <Text style={styles.label}>Property Type *</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
-        {PROPERTY_TYPES.map((type) => (
-          <TouchableOpacity
-            key={type}
-            style={[styles.chip, propertyType === type && styles.chipSelected]}
-            onPress={() => setPropertyType(type)}
-          >
-            <Text style={[styles.chipText, propertyType === type && styles.chipTextSelected]}>
-              {type}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      <View style={styles.row}>
-        <View style={styles.rowItem}>
-          <Text style={styles.label}>Bedrooms</Text>
-          <TextInput style={styles.input} value={bedrooms} onChangeText={setBedrooms} keyboardType="numeric" placeholder="0" />
+          <Field label="Monthly Rent (KES)" required>
+            <TextInput
+              style={styles.input}
+              value={price}
+              onChangeText={setPrice}
+              keyboardType="numeric"
+              placeholder="e.g. 25000"
+              placeholderTextColor={colors.textMuted}
+            />
+          </Field>
         </View>
-        <View style={styles.rowItem}>
-          <Text style={styles.label}>Bathrooms</Text>
-          <TextInput style={styles.input} value={bathrooms} onChangeText={setBathrooms} keyboardType="numeric" placeholder="0" />
+
+        {/* Property Type */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Property Type <Text style={styles.required}>*</Text></Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.chipRow}>
+              {PROPERTY_TYPES.map(type => (
+                <TouchableOpacity
+                  key={type}
+                  style={[styles.chip, propertyType === type && styles.chipActive]}
+                  onPress={() => setPropertyType(type)}
+                >
+                  <Text style={[styles.chipText, propertyType === type && styles.chipTextActive]}>
+                    {type}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
         </View>
-      </View>
 
-      <Text style={styles.label}>Total Units</Text>
-      <TextInput style={styles.input} value={totalUnits} onChangeText={setTotalUnits} keyboardType="numeric" placeholder="1" />
-
-      <Text style={styles.label}>Photos *</Text>
-      <TouchableOpacity style={styles.imagePickerButton} onPress={pickImages}>
-        <Text style={styles.imagePickerText}>+ Add Photos</Text>
-      </TouchableOpacity>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageRow}>
-        {images.map((uri, index) => (
-          <View key={index} style={styles.imageWrapper}>
-            <Image source={{ uri }} style={styles.imagePreview} />
-            <TouchableOpacity style={styles.removeImageButton} onPress={() => removeImage(index)}>
-              <Text style={styles.removeImageText}>×</Text>
-            </TouchableOpacity>
+        {/* Units & Size */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Units & Size</Text>
+          <View style={styles.row}>
+            <View style={styles.rowItem}>
+              <Field label="Bedrooms">
+                <TextInput
+                  style={styles.input}
+                  value={bedrooms}
+                  onChangeText={setBedrooms}
+                  keyboardType="numeric"
+                  placeholder="0"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </Field>
+            </View>
+            <View style={styles.rowItem}>
+              <Field label="Bathrooms">
+                <TextInput
+                  style={styles.input}
+                  value={bathrooms}
+                  onChangeText={setBathrooms}
+                  keyboardType="numeric"
+                  placeholder="0"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </Field>
+            </View>
+            <View style={styles.rowItem}>
+              <Field label="Total Units">
+                <TextInput
+                  style={styles.input}
+                  value={totalUnits}
+                  onChangeText={setTotalUnits}
+                  keyboardType="numeric"
+                  placeholder="1"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </Field>
+            </View>
           </View>
-        ))}
-      </ScrollView>
+        </View>
 
-      <Text style={styles.label}>Amenities *</Text>
-      <View style={styles.amenitiesGrid}>
-        {AMENITIES_LIST.map((amenity) => (
-          <TouchableOpacity
-            key={amenity}
-            style={[
-              styles.amenityChip,
-              selectedAmenities.includes(amenity) && styles.chipSelected,
-            ]}
-            onPress={() => toggleAmenity(amenity)}
-          >
-            <Text
-              style={[
-                styles.chipText,
-                selectedAmenities.includes(amenity) && styles.chipTextSelected,
-              ]}
-            >
-              {amenity}
-            </Text>
+        {/* Photos */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Photos <Text style={styles.required}>*</Text></Text>
+          <TouchableOpacity style={styles.photoPickerBtn} onPress={pickImages}>
+            <Text style={styles.photoPickerText}>+ Add Photos</Text>
           </TouchableOpacity>
-        ))}
-      </View>
+          {images.length > 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageRow}>
+              {images.map((uri, index) => (
+                <View key={index} style={styles.imageWrapper}>
+                  <Image source={{ uri }} style={styles.imageThumb} />
+                  <TouchableOpacity style={styles.imageRemove} onPress={() => removeImage(index)}>
+                    <Text style={styles.imageRemoveText}>x</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+        </View>
 
-      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>Add Property</Text>}
-      </TouchableOpacity>
+        {/* Amenities */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Amenities <Text style={styles.required}>*</Text></Text>
+          <View style={styles.amenitiesGrid}>
+            {AMENITIES_LIST.map(amenity => (
+              <TouchableOpacity
+                key={amenity}
+                style={[styles.chip, selectedAmenities.includes(amenity) && styles.chipActive]}
+                onPress={() => toggleAmenity(amenity)}
+              >
+                <Text style={[styles.chipText, selectedAmenities.includes(amenity) && styles.chipTextActive]}>
+                  {amenity}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
 
-    </ScrollView>
+        {/* Submit */}
+        <TouchableOpacity
+          style={[styles.submitBtn, loading && { opacity: 0.6 }]}
+          onPress={handleSubmit}
+          disabled={loading}
+        >
+          {loading
+            ? <ActivityIndicator color="#fff" />
+            : <Text style={styles.submitBtnText}>Submit Property</Text>
+          }
+        </TouchableOpacity>
+
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const getStyles = (colors) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: Spacing.four },
-  title: { fontSize: 22, fontWeight: 'bold', color: colors.text, marginBottom: Spacing.four },
-  label: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: Spacing.one, marginTop: Spacing.two },
-  input: {
+  safe: { flex: 1, backgroundColor: colors.background },
+  scroll: { flex: 1 },
+  content: { padding: Spacing.three, paddingBottom: Spacing.six },
+  pageTitle: {
+    fontSize: FontSize['3xl'],
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  pageSubtitle: {
+    fontSize: FontSize.sm,
+    color: colors.textSecondary,
+    marginBottom: Spacing.four,
+  },
+  section: {
+    backgroundColor: colors.backgroundElement,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.three,
+    marginBottom: Spacing.three,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
-    padding: Spacing.three,
-    fontSize: 15,
   },
-  textArea: { minHeight: 80, textAlignVertical: 'top' },
+  sectionTitle: {
+    fontSize: FontSize.md,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: Spacing.three,
+  },
+  field: { marginBottom: Spacing.two },
+  fieldLabel: {
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginBottom: Spacing.one,
+  },
+  required: { color: colors.primary },
+  input: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.two + 4,
+    fontSize: FontSize.md,
+    color: colors.text,
+  },
+  textArea: { minHeight: 90, textAlignVertical: 'top' },
   row: { flexDirection: 'row', gap: Spacing.two },
   rowItem: { flex: 1 },
-  chipRow: { marginBottom: Spacing.two },
+  chipRow: { flexDirection: 'row', gap: Spacing.two },
   chip: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 20,
-    paddingVertical: Spacing.one,
+    borderRadius: BorderRadius.sm,
+    paddingVertical: 6,
     paddingHorizontal: Spacing.three,
-    marginRight: Spacing.two,
+    backgroundColor: colors.background,
   },
-  chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { fontSize: 13, color: colors.text },
-  chipTextSelected: { color: '#fff', fontWeight: '600' },
-  imagePickerButton: {
+  chipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  chipText: { fontSize: FontSize.sm, color: colors.textSecondary },
+  chipTextActive: { color: '#fff', fontWeight: '600' },
+  amenitiesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  photoPickerBtn: {
     borderWidth: 1,
     borderColor: colors.primary,
     borderStyle: 'dashed',
-    borderRadius: 8,
+    borderRadius: BorderRadius.md,
     padding: Spacing.three,
     alignItems: 'center',
     marginBottom: Spacing.two,
   },
-  imagePickerText: { color: colors.primary, fontWeight: '600' },
-  imageRow: { marginBottom: Spacing.two },
+  photoPickerText: { color: colors.primary, fontWeight: '600', fontSize: FontSize.md },
+  imageRow: { marginTop: Spacing.two },
   imageWrapper: { marginRight: Spacing.two, position: 'relative' },
-  imagePreview: { width: 80, height: 80, borderRadius: 8 },
-  removeImageButton: {
+  imageThumb: { width: 80, height: 80, borderRadius: BorderRadius.md },
+  imageRemove: {
     position: 'absolute',
     top: -6,
     right: -6,
     backgroundColor: colors.danger,
     borderRadius: 12,
-    width: 24,
-    height: 24,
+    width: 22,
+    height: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  removeImageText: { color: '#fff', fontWeight: 'bold' },
-  amenitiesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, marginBottom: Spacing.two },
-  amenityChip: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 20,
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.three,
-  },
-  submitButton: {
+  imageRemoveText: { color: '#fff', fontWeight: '700', fontSize: 12 },
+  submitBtn: {
     backgroundColor: colors.primary,
-    borderRadius: 8,
+    borderRadius: BorderRadius.md,
     padding: Spacing.three,
     alignItems: 'center',
-    marginTop: Spacing.four,
+    marginTop: Spacing.two,
   },
-  submitButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  backButton: { padding: Spacing.three, alignItems: 'center' },
-  backButtonText: { color: colors.textSecondary, fontSize: 14 },
+  submitBtnText: { color: '#fff', fontSize: FontSize.md, fontWeight: '700' },
 });

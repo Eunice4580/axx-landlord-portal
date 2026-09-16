@@ -72,7 +72,7 @@ export const walletAPI = {
 };
 
 export const userAPI = {
-  getProfile: () => apiCall('/profile/me'),
+  getProfile: () => apiCall('/auth/me'),
   updateProfile: (profileData) =>
     apiCall('/profile/me', {
       method: 'PUT',
@@ -138,4 +138,63 @@ export const updateBookedUnits = (propertyId, change) =>
 
 export const paymentAPI = {
   getHistory: () => apiCall('/payment/history'),
+};
+
+export const qrStatsAPI = {
+  getStats: (propertyId) => apiCall(`/properties/${propertyId}/qr-stats`),
+};
+
+export const updatePropertyWithImages = async (propertyId, formDataFields, newImageUris, remainingImageUrls) => {
+  const token = await (await import('expo-secure-store')).getItemAsync('token');
+  const form = new FormData();
+
+  Object.entries(formDataFields).forEach(([key, value]) => {
+    form.append(key, value);
+  });
+
+  form.append('remainingImages', JSON.stringify(remainingImageUrls));
+
+  newImageUris.forEach((uri, index) => {
+    form.append('images', {
+      uri,
+      name: `photo_${index}.jpg`,
+      type: 'image/jpeg',
+    });
+  });
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PATCH', `${API_URL}/properties/${propertyId}`);
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+    xhr.onload = () => {
+      try {
+        const data = JSON.parse(xhr.responseText);
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(data);
+        } else {
+          reject(new Error(data.error || 'Failed to update property'));
+        }
+      } catch (e) {
+        reject(new Error('Failed to parse server response'));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Network error while updating'));
+
+    xhr.send(form);
+  });
+};
+
+export const deleteProperty = (propertyId) =>
+  apiCall(`/properties/${propertyId}`, { method: 'DELETE' });
+
+export const caretakerManagementAPI = {
+  updateProperties: (caretakerId, propertyIds) =>
+    apiCall(`/caretaker/${caretakerId}/properties`, {
+      method: 'PATCH',
+      body: JSON.stringify({ propertyIds }),
+    }),
+  removeCaretaker: (caretakerId) =>
+    apiCall(`/caretaker/${caretakerId}`, { method: 'DELETE' }),
 };
