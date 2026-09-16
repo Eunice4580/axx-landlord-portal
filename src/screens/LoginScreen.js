@@ -13,6 +13,7 @@ import * as SecureStore from 'expo-secure-store';
 import { authAPI } from '../services/api';
 import { Spacing, BorderRadius, FontSize } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
+import ForgotPasswordScreen from './ForgotPasswordScreen';
 
 export default function LoginScreen({ onLoginSuccess }) {
   const { colors } = useTheme();
@@ -23,6 +24,11 @@ export default function LoginScreen({ onLoginSuccess }) {
   const [loading, setLoading] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+
+  if (showForgotPassword) {
+    return <ForgotPasswordScreen onBack={() => setShowForgotPassword(false)} />;
+  }
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -131,6 +137,13 @@ export default function LoginScreen({ onLoginSuccess }) {
                 Sign in as {selectedRole === 'landlord' ? 'Landlord' : 'Caretaker'}
               </Text>
             )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.forgotLink}
+            onPress={() => setShowForgotPassword(true)}
+          >
+            <Text style={styles.forgotLinkText}>Forgot Password?</Text>
           </TouchableOpacity>
         </View>
 
@@ -243,6 +256,15 @@ const getStyles = (colors) => StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  forgotLink: {
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  forgotLinkText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '600',
   },
   buttonText: {
     color: '#fff',

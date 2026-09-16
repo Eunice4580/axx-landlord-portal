@@ -198,3 +198,19 @@ export const caretakerManagementAPI = {
   removeCaretaker: (caretakerId) =>
     apiCall(`/caretaker/${caretakerId}`, { method: 'DELETE' }),
 };
+
+export const authExtraAPI = {
+  forgotPassword: (email) =>
+    apiCall('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, platform: 'app' }),
+      useAuth: false,
+    }),
+};
+
+export const resetPasswordAPI = (token, password) =>
+  apiCall(`/auth/reset-password/${token}`, {
+    method: 'POST',
+    body: JSON.stringify({ password }),
+    useAuth: false,
+  });

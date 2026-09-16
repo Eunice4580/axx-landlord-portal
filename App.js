@@ -12,6 +12,8 @@ import SettingsScreen from './src/screens/SettingsScreen';
 import { ThemeProvider, Colors, useTheme } from './src/context/ThemeContext';
 import { userAPI } from './src/services/api';
 import { View, ActivityIndicator } from 'react-native';
+import * as Linking from 'expo-linking';
+import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -74,7 +76,24 @@ function LandlordTabs({ user, onLogout }) {
 function AppContent() {
   const [user, setUser] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
+  const [resetToken, setResetToken] = useState(null);
   const { isDark, colors } = useTheme();
+
+  useEffect(() => {
+    const handleUrl = (url) => {
+      if (!url) return;
+      const parsed = Linking.parse(url);
+      if (parsed.path && parsed.path.startsWith('reset-password')) {
+        const token = parsed.path.split('/')[1] || parsed.queryParams?.token;
+        if (token) setResetToken(token);
+      }
+    };
+
+    Linking.getInitialURL().then(handleUrl);
+    const subscription = Linking.addEventListener('url', (event) => handleUrl(event.url));
+
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     const restoreSession = async () => {
@@ -106,6 +125,15 @@ function AppContent() {
     await SecureStore.deleteItemAsync('token');
     setUser(null);
   };
+
+  if (resetToken) {
+    return (
+      <>
+        <ResetPasswordScreen token={resetToken} onDone={() => setResetToken(null)} />
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+      </>
+    );
+  }
 
   if (checkingSession) {
     return (
