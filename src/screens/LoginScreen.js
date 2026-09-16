@@ -72,7 +72,7 @@ export default function LoginScreen({ onLoginSuccess }) {
             <Text style={styles.logoText}>AXX</Text>
           </View>
           <Text style={styles.brandName}>AXXSPACE</Text>
-          <Text style={styles.tagline}>Landlord Portal</Text>
+          <Text style={styles.tagline}>Axxspace Manager</Text>
         </View>
 
         {/* Role Selector */}

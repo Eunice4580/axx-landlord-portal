@@ -6,8 +6,8 @@ const DarkColors = {
   backgroundElement: '#1e293b',
   backgroundElevated: '#162035',
 
-  primary: '#6366f1',       // indigo – replaces the old red
-  primaryDark: '#4f46e5',
+  primary: '#e11d48',       // crimson red
+  primaryDark: '#be123c',
   accent: '#fbbf24',
 
   text: '#f1f5f9',
@@ -31,8 +31,8 @@ const LightColors = {
   backgroundElement: '#ffffff',
   backgroundElevated: '#f1f5f9',
 
-  primary: '#6366f1',
-  primaryDark: '#4f46e5',
+  primary: '#e11d48',
+  primaryDark: '#be123c',
   accent: '#f59e0b',
 
   text: '#0f172a',
