@@ -7,8 +7,8 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 import { authAPI } from '../services/api';
 import { Spacing, BorderRadius, FontSize } from '../constants/theme';

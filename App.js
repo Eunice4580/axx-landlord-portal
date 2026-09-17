@@ -9,7 +9,8 @@ import CaretakerDashboardScreen from './src/screens/CaretakerDashboardScreen';
 import AddPropertyScreen from './src/screens/AddPropertyScreen';
 import PaymentsScreen from './src/screens/PaymentsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
-import { ThemeProvider, Colors, useTheme } from './src/context/ThemeContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { userAPI } from './src/services/api';
 import { View, ActivityIndicator } from 'react-native';
 import * as Linking from 'expo-linking';
@@ -24,20 +25,23 @@ const TabIcon = ({ label, focused, colors }) => (
 );
 
 function LandlordTabs({ user, onLogout }) {
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: Colors.backgroundElement,
-          borderTopColor: Colors.border,
+          backgroundColor: colors.backgroundElement,
+          borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
+          height: 56 + insets.bottom,
+          paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 8,
         },
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textSecondary,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
@@ -171,8 +175,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AppContent />
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }

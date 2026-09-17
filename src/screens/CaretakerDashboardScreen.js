@@ -9,10 +9,9 @@ import {
   TouchableOpacity,
   Alert,
   Image,
-  SafeAreaView,
   ScrollView,
-  Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { caretakerAPI, updateBookedUnits } from '../services/api';
 import { Spacing, BorderRadius, FontSize } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';

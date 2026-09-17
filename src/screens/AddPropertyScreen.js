@@ -9,8 +9,8 @@ import {
   Alert,
   ActivityIndicator,
   Image,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { createPropertyWithImages } from '../services/api';
 import { Spacing, BorderRadius, FontSize } from '../constants/theme';

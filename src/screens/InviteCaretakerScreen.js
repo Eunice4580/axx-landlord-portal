@@ -8,8 +8,8 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { propertyAPI, caretakerAPI } from '../services/api';
 import { Spacing, BorderRadius, FontSize } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';

@@ -5,10 +5,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   Switch,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Spacing, BorderRadius, FontSize } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
 import InviteCaretakerScreen from './InviteCaretakerScreen';

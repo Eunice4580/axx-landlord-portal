@@ -9,8 +9,8 @@ import {
   ActivityIndicator,
   Image,
   Alert,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { propertyAPI, updateBookedUnits } from '../services/api';
 import QRStatsScreen from './QRStatsScreen';
 import QRGeneratorScreen from './QRGeneratorScreen';
