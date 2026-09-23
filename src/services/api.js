@@ -215,6 +215,112 @@ export const resetPasswordAPI = (token, password) =>
     useAuth: false,
   });
 
+// ── AxxBiashara Portal APIs ────────────────────────────────────────────────────
+
+/**
+ * Dedicated API caller for AxxBiashara portal.
+ * Uses 'biashara_token' for auth.
+ * Has a 35-second timeout for Render.com cold starts.
+ */
+const apiCallBiashara = async (endpoint, options = {}) => {
+  const { useAuth = true, ...fetchOptions } = options;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 35000);
+
+  const headers = {
+    'Content-Type': 'application/json',
+    ...fetchOptions.headers,
+  };
+
+  if (useAuth) {
+    try {
+      const token = await SecureStore.getItemAsync('biashara_token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    } catch (e) {
+      console.error('Error getting biashara token:', e);
+    }
+  }
+
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      ...fetchOptions,
+      headers,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || data.message || `Request failed (${response.status})`);
+    }
+    return data;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timed out. The server may be waking up — please try again.');
+    }
+    if (error.message === 'Network request failed') {
+      throw new Error('No internet connection. Please check your network and try again.');
+    }
+    console.error('Biashara API error:', error.message);
+    throw error;
+  }
+};
+
+// Auth (login only — owners register on the website)
+export const biasharaAuthAPI = {
+  login: (email, password) =>
+    apiCallBiashara('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, role: 'user' }),
+      useAuth: false,
+    }),
+  forgotPassword: (email) =>
+    apiCallBiashara('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, role: 'user' }),
+      useAuth: false,
+    }),
+  getMe: () => apiCallBiashara('/auth/me'),
+};
+
+// Business profile management
+export const biasharaBusinessAPI = {
+  getMyBusiness: () => apiCallBiashara('/business/my'),
+  updateMyBusiness: (id, data) =>
+    apiCallBiashara(`/business/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  getMyReviews: () => apiCallBiashara('/business-reviews/my'),
+  getMyAnnouncements: (id) => apiCallBiashara(`/business/${id}/announcements`),
+};
+
+// Biashara profile: change password, update name/phone — all native in-app
+export const biasharaProfileAPI = {
+  changePassword: (currentPassword, newPassword) =>
+    apiCallBiashara('/profile/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
+  updateProfile: (name, phone) =>
+    apiCallBiashara('/profile/me', {
+      method: 'PUT',
+      body: JSON.stringify({ name, phone }),
+    }),
+};
+
+// Materials / listings management
+export const biasharaMaterialsAPI = {
+  getMyListings: () => apiCallBiashara('/materials/seller/my-materials'),
+  markAsSold: (id) =>
+    apiCallBiashara(`/materials/${id}/sold`, { method: 'PATCH' }),
+  deleteListing: (id) =>
+    apiCallBiashara(`/materials/${id}`, { method: 'DELETE' }),
+};
+
 export const profileUpdateAPI = {
   changePassword: (currentPassword, newPassword) =>
     apiCall('/profile/change-password', {

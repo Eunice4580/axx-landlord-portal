@@ -4,6 +4,8 @@ import * as SecureStore from 'expo-secure-store';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import LoginScreen from './src/screens/LoginScreen';
+import PortalSelectorScreen from './src/screens/biashara/PortalSelectorScreen';
+import BiasharaPortal from './src/screens/biashara/BiasharaPortal';
 import DashboardScreen from './src/screens/DashboardScreen';
 import CaretakerDashboardScreen from './src/screens/CaretakerDashboardScreen';
 import AddPropertyScreen from './src/screens/AddPropertyScreen';
@@ -78,6 +80,7 @@ function LandlordTabs({ user, onLogout }) {
 }
 
 function AppContent() {
+  const [selectedPortal, setSelectedPortal] = useState(null); // null | 'landlord' | 'biashara'
   const [user, setUser] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const [resetToken, setResetToken] = useState(null);
@@ -101,6 +104,11 @@ function AppContent() {
 
   useEffect(() => {
     const restoreSession = async () => {
+      // Only try to restore landlord session if landlord portal was selected
+      if (selectedPortal !== 'landlord') {
+        setCheckingSession(false);
+        return;
+      }
       try {
         const token = await SecureStore.getItemAsync('token');
         if (token) {
@@ -119,7 +127,7 @@ function AppContent() {
       }
     };
     restoreSession();
-  }, []);
+  }, [selectedPortal]);
 
   const handleLoginSuccess = (loggedInUser) => {
     setUser(loggedInUser);
@@ -128,6 +136,16 @@ function AppContent() {
   const handleLogout = async () => {
     await SecureStore.deleteItemAsync('token');
     setUser(null);
+    // Return to portal selector after logout
+    setSelectedPortal(null);
+    setCheckingSession(true);
+  };
+
+  // When biashara portal returns to selector, reset landlord state
+  const handleBackToSelector = () => {
+    setSelectedPortal(null);
+    setUser(null);
+    setCheckingSession(true);
   };
 
   if (resetToken) {
@@ -147,6 +165,27 @@ function AppContent() {
     );
   }
 
+  // ── Portal Selector (shown when no portal is chosen yet) ──
+  if (!selectedPortal) {
+    return (
+      <>
+        <PortalSelectorScreen onSelectPortal={setSelectedPortal} />
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+      </>
+    );
+  }
+
+  // ── AxxBiashara Portal (self-contained) ──
+  if (selectedPortal === 'biashara') {
+    return (
+      <>
+        <BiasharaPortal onBackToPortalSelector={handleBackToSelector} />
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+      </>
+    );
+  }
+
+  // ── Landlord Portal (unchanged logic below) ──
   if (!user) {
     return (
       <>
