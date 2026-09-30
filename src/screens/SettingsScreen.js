@@ -143,7 +143,7 @@ export default function SettingsScreen({ user, onLogout }) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Appearance</Text>
           <View style={[styles.menuRow, { borderBottomWidth: 0 }]}>
-            <Text style={styles.menuRowText}>{isDark ? '🌙  Dark Mode' : '☀️  Light Mode'}</Text>
+            <Text style={styles.menuRowText}>{isDark ? 'Dark Mode' : 'Light Mode'}</Text>
             <Switch
               value={isDark}
               onValueChange={toggleTheme}

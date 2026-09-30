@@ -9,16 +9,16 @@ import { FontSize, Spacing } from '../../constants/theme';
 import BiasharaLoginScreen from './BiasharaLoginScreen';
 import BiasharaOverviewScreen from './BiasharaOverviewScreen';
 import BiasharaListingsScreen from './BiasharaListingsScreen';
-import BiasharaUploadScreen from './BiasharaUploadScreen';
 import BiasharaAccountScreen from './BiasharaAccountScreen';
+import RegisterBusinessScreen from './RegisterBusinessScreen';
+import { GridIcon, StoreIcon, UserIcon } from './Icons';
 
 const ACCENT = '#fbbf24';
 
 const TABS = [
-  { key: 'overview',  label: 'Overview' },
-  { key: 'listings',  label: 'My Listings' },
-  { key: 'upload',    label: 'Upload' },
-  { key: 'account',  label: 'Account' },
+  { key: 'overview',  label: 'Overview',      Icon: GridIcon  },
+  { key: 'listings',  label: 'My Businesses', Icon: StoreIcon },
+  { key: 'account',   label: 'Account',       Icon: UserIcon  },
 ];
 
 function BottomTabBar({ activeTab, setActiveTab, colors, insets }) {
@@ -27,19 +27,26 @@ function BottomTabBar({ activeTab, setActiveTab, colors, insets }) {
       styles.tabBar,
       {
         backgroundColor: colors.backgroundElement,
-        borderTopColor: ACCENT + '30',
-        paddingBottom: Math.max(insets.bottom, 8),
+        borderTopColor: colors.border,
+        paddingBottom: Math.max(insets.bottom, 10),
       },
     ]}>
       {TABS.map(tab => {
         const active = activeTab === tab.key;
+        const { Icon } = tab;
         return (
           <TouchableOpacity
             key={tab.key}
             style={styles.tabItem}
             onPress={() => setActiveTab(tab.key)}
+            activeOpacity={0.7}
           >
-            <View style={[styles.tabIndicator, { backgroundColor: active ? ACCENT : 'transparent' }]} />
+            <View style={[
+              styles.tabIconWrap,
+              { backgroundColor: active ? ACCENT + '20' : 'transparent' },
+            ]}>
+              <Icon color={active ? ACCENT : colors.textMuted} size={20} />
+            </View>
             <Text style={[styles.tabLabel, { color: active ? ACCENT : colors.textMuted }]}>
               {tab.label}
             </Text>
@@ -56,7 +63,9 @@ export default function BiasharaPortal({ onBackToPortalSelector }) {
 
   const [checkingSession, setCheckingSession] = useState(true);
   const [user, setUser] = useState(null);
+  const [displayUser, setDisplayUser] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [showRegister, setShowRegister] = useState(false);
 
   useEffect(() => {
     const restore = async () => {
@@ -81,25 +90,40 @@ export default function BiasharaPortal({ onBackToPortalSelector }) {
 
   const handleLoginSuccess = (loggedInUser) => {
     setUser(loggedInUser);
+    setDisplayUser(loggedInUser);
     setActiveTab('overview');
   };
 
   const handleLogout = async () => {
     await SecureStore.deleteItemAsync('biashara_token');
     setUser(null);
+    setDisplayUser(null);
   };
 
-  // Re-fetch user from server after profile update so the new photo URL is reflected
-  const refreshUser = async () => {
-    try {
-      const response = await biasharaAuthAPI.getMe();
-      if (response && (response.user || response._id)) {
-        setUser(response.user || response);
-      }
-    } catch {
-      // Non-critical — silently ignore; the local state is still fine
+  // Called immediately with the local avatar URI so all tabs update without
+  // waiting for the server. Background server fetch follows to get the CDN URL.
+  const handleProfileUpdated = (updatedFields, localAvatarUri) => {
+    if (updatedFields || localAvatarUri) {
+      setDisplayUser(prev => ({
+        ...(prev || user),
+        ...(updatedFields || {}),
+        ...(localAvatarUri ? { profileImage: localAvatarUri, avatar: localAvatarUri } : {}),
+      }));
     }
+    // Background server refresh — updates to real CDN URL
+    biasharaAuthAPI.getMe().then(response => {
+      if (response && (response.user || response._id)) {
+        const fresh = response.user || response;
+        setUser(fresh);
+        setDisplayUser(fresh);
+      }
+    }).catch(() => {});
   };
+
+  // Sync displayUser when user state changes (e.g. after server refresh)
+  useEffect(() => {
+    if (user) setDisplayUser(prev => ({ ...user, ...(prev?.profileImage && !user.profileImage ? { profileImage: prev.profileImage, avatar: prev.avatar } : {}) }));
+  }, [user]);
 
   if (checkingSession) {
     return (
@@ -118,12 +142,47 @@ export default function BiasharaPortal({ onBackToPortalSelector }) {
     );
   }
 
+  const shownUser = displayUser || user;
+
+  // Register Business — full-screen overlay (hides tab bar)
+  if (showRegister) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <RegisterBusinessScreen
+          user={shownUser}
+          onBack={() => setShowRegister(false)}
+          onDone={() => {
+            setShowRegister(false);
+            setActiveTab('listings');
+          }}
+        />
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {activeTab === 'overview'  && <BiasharaOverviewScreen user={user} onLogout={handleLogout} />}
-      {activeTab === 'listings'  && <BiasharaListingsScreen user={user} />}
-      {activeTab === 'upload'    && <BiasharaUploadScreen onUploadSuccess={() => setActiveTab('listings')} />}
-      {activeTab === 'account'   && <BiasharaAccountScreen user={user} onLogout={handleLogout} onProfileUpdated={refreshUser} />}
+      {/* Keep all tabs mounted but hide inactive ones to preserve state */}
+      <View style={{ flex: 1, display: activeTab === 'overview' ? 'flex' : 'none' }}>
+        <BiasharaOverviewScreen
+          user={shownUser}
+          onLogout={handleLogout}
+          onRegisterBusiness={() => setShowRegister(true)}
+        />
+      </View>
+      <View style={{ flex: 1, display: activeTab === 'listings' ? 'flex' : 'none' }}>
+        <BiasharaListingsScreen
+          user={shownUser}
+          onRegisterBusiness={() => setShowRegister(true)}
+        />
+      </View>
+      <View style={{ flex: 1, display: activeTab === 'account' ? 'flex' : 'none' }}>
+        <BiasharaAccountScreen
+          user={shownUser}
+          onLogout={handleLogout}
+          onProfileUpdated={handleProfileUpdated}
+        />
+      </View>
 
       <BottomTabBar
         activeTab={activeTab}
@@ -141,7 +200,19 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     paddingTop: 8,
   },
-  tabItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 4 },
-  tabIndicator: { width: 22, height: 3, borderRadius: 2, marginBottom: 4 },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 2,
+    gap: 4,
+  },
+  tabIconWrap: {
+    width: 44,
+    height: 32,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   tabLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.2 },
 });

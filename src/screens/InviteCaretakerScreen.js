@@ -130,7 +130,7 @@ export default function InviteCaretakerScreen({ onBack }) {
                   onPress={() => toggleProperty(p._id)}
                 >
                   <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
-                    {selected && <Text style={styles.checkmark}>✓</Text>}
+                    {selected && <Text style={styles.checkmark}>v</Text>}
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.propertyName, selected && styles.propertyNameSelected]}>

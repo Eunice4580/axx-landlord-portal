@@ -6,6 +6,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import LoginScreen from './src/screens/LoginScreen';
 import PortalSelectorScreen from './src/screens/biashara/PortalSelectorScreen';
 import BiasharaPortal from './src/screens/biashara/BiasharaPortal';
+import AccommodationPortal from './src/screens/accommodation/AccommodationPortal';
 import DashboardScreen from './src/screens/DashboardScreen';
 import CaretakerDashboardScreen from './src/screens/CaretakerDashboardScreen';
 import AddPropertyScreen from './src/screens/AddPropertyScreen';
@@ -180,6 +181,16 @@ function AppContent() {
     return (
       <>
         <BiasharaPortal onBackToPortalSelector={handleBackToSelector} />
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+      </>
+    );
+  }
+
+  // ── Accommodation Portal (self-contained) ──
+  if (selectedPortal === 'accommodation') {
+    return (
+      <>
+        <AccommodationPortal onBackToPortalSelector={handleBackToSelector} />
         <StatusBar style={isDark ? 'light' : 'dark'} />
       </>
     );

@@ -408,7 +408,8 @@ export default function BiasharaAccountScreen({ user, onLogout, onProfileUpdated
       ...updatedFields,
       ...(localAvatarUri ? { profileImage: localAvatarUri, avatar: localAvatarUri } : {}),
     }));
-    onProfileUpdated?.(); // background refresh → updates parent user → syncs via useEffect
+    // Pass both fields and avatar URI up to the portal for instant cross-tab sync
+    onProfileUpdated?.(updatedFields, localAvatarUri);
   };
 
   const displayName = localUser?.name || 'Business Owner';

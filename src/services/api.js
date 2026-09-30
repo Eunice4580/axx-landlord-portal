@@ -269,7 +269,9 @@ const apiCallBiashara = async (endpoint, options = {}) => {
   }
 };
 
-// Auth (login only — owners register on the website)
+// AxxBiashara Auth — business owners log in via the standard /auth/login.
+// They are stored with role: 'user' in the DB (same as the website's BusinessLogin.jsx).
+// Account creation (signup) is done on the website only; the app is sign-in only.
 export const biasharaAuthAPI = {
   login: (email, password) =>
     apiCallBiashara('/auth/login', {
@@ -288,13 +290,47 @@ export const biasharaAuthAPI = {
 
 // Business profile management
 export const biasharaBusinessAPI = {
+  // ── Read ──────────────────────────────────────────────────────────
   getMyBusiness: () => apiCallBiashara('/business/my'),
+  getBusinessById: (id) => apiCallBiashara(`/business/${id}`),
+
+  // ── Create ────────────────────────────────────────────────────────
+  // POST /api/business — authenticated, JSON body matching backend schema
+  createBusiness: (data) =>
+    apiCallBiashara('/business', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // ── Update / Delete ───────────────────────────────────────────────
   updateMyBusiness: (id, data) =>
     apiCallBiashara(`/business/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
+  deleteBusiness: (id) =>
+    apiCallBiashara(`/business/${id}`, { method: 'DELETE' }),
+
+  // ── Reviews ───────────────────────────────────────────────────────
   getMyReviews: () => apiCallBiashara('/business-reviews/my'),
+  getBusinessReviews: (businessId) =>
+    apiCallBiashara(`/business-reviews/business/${businessId}`),
+
+  // ── Analytics ─────────────────────────────────────────────────────
+  getBusinessAnalytics: (businessId) =>
+    apiCallBiashara(`/business-analytics/${businessId}`),
+
+  // ── Inquiries ─────────────────────────────────────────────────────
+  getMyInquiries: () => apiCallBiashara('/business-inquiries/my'),
+  getBusinessInquiries: (businessId) =>
+    apiCallBiashara(`/business-inquiries/business/${businessId}`),
+  respondToInquiry: (inquiryId, response) =>
+    apiCallBiashara(`/business-inquiries/${inquiryId}/respond`, {
+      method: 'PUT',
+      body: JSON.stringify({ response }),
+    }),
+
+  // ── Announcements ─────────────────────────────────────────────────
   getMyAnnouncements: (id) => apiCallBiashara(`/business/${id}/announcements`),
 };
 
@@ -319,6 +355,7 @@ export const biasharaMaterialsAPI = {
     apiCallBiashara(`/materials/${id}/sold`, { method: 'PATCH' }),
   deleteListing: (id) =>
     apiCallBiashara(`/materials/${id}`, { method: 'DELETE' }),
+  createMaterial: () => '/materials/create', // XHR endpoint — used directly in BiasharaUploadScreen
 };
 
 export const profileUpdateAPI = {

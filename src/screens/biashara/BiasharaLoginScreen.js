@@ -117,6 +117,9 @@ export default function BiasharaLoginScreen({ onLoginSuccess, onBack }) {
             </View>
             <Text style={[s.brandName, { color: colors.text }]}>AxxBiashara</Text>
             <Text style={s.tagline}>Business Owner Portal</Text>
+            <View style={[s.taglinePill, { backgroundColor: ACCENT + '18', borderColor: ACCENT + '30' }]}>
+              <Text style={[s.taglinePillText, { color: ACCENT }]}>Sign in to manage your business</Text>
+            </View>
           </View>
 
           {msg.text ? (
@@ -159,7 +162,7 @@ export default function BiasharaLoginScreen({ onLoginSuccess, onBack }) {
             </Text>
           </View>
 
-          <Text style={[s.footer, { color: colors.textMuted }]}>AXX Spaces — Space hunting bila stress.</Text>
+          <Text style={[s.footer, { color: colors.textMuted }]}>AxxBiashara — Manage your business anytime, anywhere.</Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -172,9 +175,11 @@ const getStyles = (colors) => StyleSheet.create({
   backBtn: { flexDirection: 'row', alignItems: 'center', marginTop: Spacing.three, marginBottom: Spacing.two },
   backText: { fontSize: FontSize.sm, fontWeight: '700' },
   brandBlock: { alignItems: 'center', marginBottom: Spacing.four },
-  logoMark: { width: 72, height: 72, borderRadius: BorderRadius.lg, justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.two, shadowColor: ACCENT, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 8 },
-  brandName: { fontSize: 28, fontWeight: '900', letterSpacing: 1 },
-  tagline: { fontSize: FontSize.base, color: '#94a3b8', marginTop: 4, fontWeight: '600' },
+  logoMark: { width: 72, height: 72, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.two, shadowColor: ACCENT, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.4, shadowRadius: 20, elevation: 10 },
+  brandName: { fontSize: 30, fontWeight: '900', letterSpacing: -0.5 },
+  tagline: { fontSize: FontSize.sm, color: '#94a3b8', marginTop: 4, fontWeight: '600', letterSpacing: 0.3 },
+  taglinePill: { marginTop: 10, borderWidth: 1, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5 },
+  taglinePillText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.3 },
   form: {},
   label: { fontSize: 11, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6, marginTop: Spacing.two },
   input: { backgroundColor: colors.backgroundElement, borderWidth: 1, borderColor: colors.border, borderRadius: BorderRadius.md, padding: Spacing.three, fontSize: FontSize.md, color: colors.text },

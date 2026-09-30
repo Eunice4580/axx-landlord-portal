@@ -107,7 +107,7 @@ export default function CaretakerDashboardScreen({ user, onLogout }) {
 
           <View style={{ backgroundColor: colors.backgroundElement, borderRadius: BorderRadius.lg, padding: Spacing.three, borderWidth: 1, borderColor: colors.border }}>
             <View style={[styles.settingsRow, { borderBottomWidth: 0 }]}>
-              <Text style={styles.settingsRowText}>{isDark ? '🌙  Dark Mode' : '☀️  Light Mode'}</Text>
+              <Text style={styles.settingsRowText}>{isDark ? 'Dark Mode' : 'Light Mode'}</Text>
               <Switch
                 value={isDark}
                 onValueChange={toggleTheme}
