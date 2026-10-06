@@ -367,7 +367,7 @@ function RequestCard({ req }) {
 }
 
 /* ── Main Screen ────────────────────────────────────────────────────── */
-export default function AgentOverviewScreen({ user, onUpload, onNotifications }) {
+export default function AgentOverviewScreen({ user, onUpload, onNotifications, onUpgradePackage }) {
   const [myHouses, setMyHouses] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -480,6 +480,15 @@ export default function AgentOverviewScreen({ user, onUpload, onNotifications })
           <TouchableOpacity onPress={() => { setRefreshing(true); loadData(true); }} style={{ padding: 4 }}>
             <RefreshIcon size={18} color={C.logoAccent} />
           </TouchableOpacity>
+          {onUpgradePackage && (
+            <TouchableOpacity
+              style={{ backgroundColor: '#fbbf24', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 }}
+              onPress={onUpgradePackage}
+              activeOpacity={0.8}
+            >
+              <Text style={{ color: '#1f2937', fontSize: 12, fontWeight: '700' }}>⭐ Upgrade Package</Text>
+            </TouchableOpacity>
+          )}
           {onNotifications && (
             <TouchableOpacity onPress={onNotifications} style={{ padding: 4 }} activeOpacity={0.7}>
               <BellIcon size={20} color={C.logoAccent} />
@@ -533,6 +542,11 @@ export default function AgentOverviewScreen({ user, onUpload, onNotifications })
         {/* ── My Houses ── */}
         <View>
             {/* Section heading + upload button — exact from website */}
+            <View style={styles.tabs}>
+              <View style={[styles.tab, styles.tabActive]}>
+                <Text style={[styles.tabText, styles.tabTextActive]}>My Houses ({myHouses.length})</Text>
+              </View>
+            </View>
             <View style={styles.sectionHeaderRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.sectionTitle}>My Uploaded Houses & Properties</Text>
@@ -605,7 +619,7 @@ const styles = StyleSheet.create({
   logo:        { flexDirection: 'row', alignItems: 'center' },
   logoAccent:  { fontSize: 18, fontWeight: '900', color: C.logoAccent },
   logoWord:    { fontSize: 18, fontWeight: '900', color: C.logoWord },
-  headerActions:{ flexDirection: 'row', alignItems: 'center', gap: 6 },
+  headerActions:{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' },
 
   /* Upload btn — green, exact from website */
   uploadBtn: {
