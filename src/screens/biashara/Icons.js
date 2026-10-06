@@ -226,11 +226,3 @@ export const MoonIcon = ({ color = '#fbbf24', size = 16 }) => (
   </Svg>
 );
 
-export const BarChartIcon = ({ color = '#94a3b8', size = 18 }) => (
-  <Svg {...d(size, color)} viewBox="0 0 24 24">
-    <Line x1="18" y1="20" x2="18" y2="10" />
-    <Line x1="12" y1="20" x2="12" y2="4" />
-    <Line x1="6"  y1="20" x2="6"  y2="14" />
-    <Line x1="2"  y1="20" x2="22" y2="20" />
-  </Svg>
-);

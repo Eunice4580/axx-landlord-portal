@@ -42,3 +42,4 @@ yarn-error.*
 *.zip
 app.json.bak
 *.zip
+dist/
