@@ -225,3 +225,12 @@ export const MoonIcon = ({ color = '#fbbf24', size = 16 }) => (
     <Path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
   </Svg>
 );
+
+export const BarChartIcon = ({ color = '#94a3b8', size = 18 }) => (
+  <Svg {...d(size, color)} viewBox="0 0 24 24">
+    <Line x1="18" y1="20" x2="18" y2="10" />
+    <Line x1="12" y1="20" x2="12" y2="4" />
+    <Line x1="6"  y1="20" x2="6"  y2="14" />
+    <Line x1="2"  y1="20" x2="22" y2="20" />
+  </Svg>
+);

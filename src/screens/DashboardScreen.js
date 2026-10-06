@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { AppState } from 'react-native';
 import {
   View,
   Text,
@@ -58,7 +59,15 @@ export default function DashboardScreen({ user, onLogout }) {
     }
   }, []);
 
-  useEffect(() => { loadProperties(); }, [loadProperties]);
+  // Auto-sync: properties deleted/changed on website update here automatically
+  useEffect(() => {
+    loadProperties();
+    const appStateSub = AppState.addEventListener('change', s => {
+      if (s === 'active') loadProperties();
+    });
+    const poll = setInterval(() => loadProperties(), 60000);
+    return () => { appStateSub.remove(); clearInterval(poll); };
+  }, [loadProperties]);
 
   const onRefresh = () => { setRefreshing(true); loadProperties(); };
 

@@ -110,3 +110,59 @@ export const ShieldCheckIcon = ({ color = '#22c55e', size = 14 }) => (
     <Polyline points="9 12 11 14 15 10" />
   </Svg>
 );
+
+export const EditIcon = ({ color = '#10b981', size = 16 }) => (
+  <Svg {...d(size, color)} viewBox="0 0 24 24">
+    <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+  </Svg>
+);
+
+export const SunIcon = ({ color = '#10b981', size = 16 }) => (
+  <Svg {...d(size, color)} viewBox="0 0 24 24">
+    <Circle cx="12" cy="12" r="5" />
+    <Line x1="12" y1="1" x2="12" y2="3" />
+    <Line x1="12" y1="21" x2="12" y2="23" />
+    <Line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+    <Line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+    <Line x1="1" y1="12" x2="3" y2="12" />
+    <Line x1="21" y1="12" x2="23" y2="12" />
+    <Line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+    <Line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+  </Svg>
+);
+
+export const MoonIcon = ({ color = '#10b981', size = 16 }) => (
+  <Svg {...d(size, color)} viewBox="0 0 24 24">
+    <Path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+  </Svg>
+);
+
+export const TrashIcon = ({ color = '#ef4444', size = 16 }) => (
+  <Svg {...d(size, color)} viewBox="0 0 24 24">
+    <Polyline points="3 6 5 6 21 6" />
+    <Path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    <Line x1="10" y1="11" x2="10" y2="17" />
+    <Line x1="14" y1="11" x2="14" y2="17" />
+  </Svg>
+);
+
+export const PlusIcon = ({ color = '#fff', size = 18 }) => (
+  <Svg {...d(size, color, 2.5)} viewBox="0 0 24 24">
+    <Line x1="12" y1="5" x2="12" y2="19" />
+    <Line x1="5" y1="12" x2="19" y2="12" />
+  </Svg>
+);
+
+export const ChevronRightIcon = ({ color = '#94a3b8', size = 16 }) => (
+  <Svg {...d(size, color, 2.5)} viewBox="0 0 24 24">
+    <Polyline points="9 18 15 12 9 6" />
+  </Svg>
+);
+
+export const CameraIcon = ({ color = '#10b981', size = 18 }) => (
+  <Svg {...d(size, color)} viewBox="0 0 24 24">
+    <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+    <Circle cx="12" cy="13" r="4" />
+  </Svg>
+);

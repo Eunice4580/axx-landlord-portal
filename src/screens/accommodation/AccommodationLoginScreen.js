@@ -23,7 +23,7 @@ async function apiPost(path, body) {
   return data;
 }
 
-export default function AccommodationLoginScreen({ onLoginSuccess, onBack }) {
+export default function AccommodationLoginScreen({ onLoginSuccess, onBack, onCreateAccount }) {
   const { colors } = useTheme();
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
@@ -42,9 +42,11 @@ export default function AccommodationLoginScreen({ onLoginSuccess, onBack }) {
     }
     setLoading(true);
     try {
-      const data = await apiPost('/auth/login', { email: email.trim(), password, role: 'landlord' });
+      const data = await apiPost('/auth/login', { email: email.trim(), password, role: 'host' });
       if (!data.token || !data.user) throw new Error('Invalid response. Please try again.');
-      if (data.user.role !== 'host') throw new Error('This portal is for accommodation providers only.');
+      if (data.user.role !== 'host' && data.user.role !== 'landlord') {
+        throw new Error('This portal is for accommodation hosts. Please sign in with your host account or register at axxspace.com/accommodation/register.');
+      }
       await SecureStore.setItemAsync('accom_token', data.token);
       onLoginSuccess(data.user);
     } catch (err) {
@@ -59,7 +61,7 @@ export default function AccommodationLoginScreen({ onLoginSuccess, onBack }) {
     setForgotLoading(true);
     setMsg({ text: '', ok: false });
     try {
-      await apiPost('/auth/forgot-password', { email: forgotEmail.trim(), role: 'landlord' });
+      await apiPost('/auth/forgot-password', { email: forgotEmail.trim(), role: 'host' });
       setMsg({ text: 'Reset link sent. Check your inbox.', ok: true });
     } catch (err) {
       setMsg({ text: err.message || 'Failed to send reset email.', ok: false });
@@ -118,9 +120,9 @@ export default function AccommodationLoginScreen({ onLoginSuccess, onBack }) {
               <HomeIcon color="#fff" size={30} />
             </View>
             <Text style={[s.brandName, { color: colors.text }]}>Accommodation</Text>
-            <Text style={s.tagline}>Host Portal</Text>
+            <Text style={s.tagline}>Provider & Host Portal</Text>
             <View style={[s.pill, { backgroundColor: ACCENT + '18', borderColor: ACCENT + '35' }]}>
-              <Text style={[s.pillText, { color: ACCENT }]}>Sign in to manage your property</Text>
+              <Text style={[s.pillText, { color: ACCENT }]}>Access your accommodation property dashboard</Text>
             </View>
           </View>
 
@@ -132,7 +134,7 @@ export default function AccommodationLoginScreen({ onLoginSuccess, onBack }) {
           ) : null}
 
           <Text style={s.label}>Email Address</Text>
-          <TextInput style={s.input} placeholder="you@example.com" placeholderTextColor={colors.textMuted}
+          <TextInput style={s.input} placeholder="your@email.com" placeholderTextColor={colors.textMuted}
             value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
 
           <Text style={s.label}>Password</Text>
@@ -146,19 +148,24 @@ export default function AccommodationLoginScreen({ onLoginSuccess, onBack }) {
           </View>
 
           <TouchableOpacity style={s.forgotLink} onPress={() => { setMode('forgot'); setMsg({ text: '', ok: false }); }}>
-            <Text style={[s.forgotText, { color: ACCENT }]}>Forgot Password?</Text>
+            <Text style={[s.forgotText, { color: ACCENT }]}>Forgot password?</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={[s.btn, loading && s.btnDisabled]} onPress={handleLogin} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.btnText}>Sign In</Text>}
+            {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.btnText}>Login</Text>}
           </TouchableOpacity>
 
-          <View style={[s.note, { borderColor: colors.border, backgroundColor: colors.backgroundElement }]}>
+          {/* Create account — in-app */}
+          <TouchableOpacity
+            style={[s.note, { borderColor: ACCENT + '50', backgroundColor: 'rgba(16,185,129,0.07)' }]}
+            onPress={onCreateAccount}
+            activeOpacity={0.8}
+          >
             <Text style={[s.noteText, { color: colors.textMuted }]}>
-              Don't have an account?{'\n'}Register your property at{' '}
-              <Text style={{ color: ACCENT, fontWeight: '700' }}>axxspace.com/accommodation</Text>
+              Don't have an account?{'\n'}
+              <Text style={{ color: ACCENT, fontWeight: '800' }}>Create Account →</Text>
             </Text>
-          </View>
+          </TouchableOpacity>
 
           <Text style={[s.footer, { color: colors.textMuted }]}>
             AxxSpaces — Accommodation Host Portal

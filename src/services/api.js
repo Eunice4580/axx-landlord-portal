@@ -253,7 +253,7 @@ const apiCallBiashara = async (endpoint, options = {}) => {
     clearTimeout(timeoutId);
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.error || data.message || `Request failed (${response.status})`);
+      throw new Error(data.details || data.error || data.message || `Request failed (${response.status})`);
     }
     return data;
   } catch (error) {

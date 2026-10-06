@@ -4,9 +4,11 @@ import * as SecureStore from 'expo-secure-store';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import LoginScreen from './src/screens/LoginScreen';
+import RegisterScreen from './src/screens/RegisterScreen';
 import PortalSelectorScreen from './src/screens/biashara/PortalSelectorScreen';
 import BiasharaPortal from './src/screens/biashara/BiasharaPortal';
 import AccommodationPortal from './src/screens/accommodation/AccommodationPortal';
+import AgentPortal from './src/screens/agent/AgentPortal';
 import DashboardScreen from './src/screens/DashboardScreen';
 import CaretakerDashboardScreen from './src/screens/CaretakerDashboardScreen';
 import AddPropertyScreen from './src/screens/AddPropertyScreen';
@@ -85,6 +87,7 @@ function AppContent() {
   const [user, setUser] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const [resetToken, setResetToken] = useState(null);
+  const [showLandlordRegister, setShowLandlordRegister] = useState(false);
   const { isDark, colors } = useTheme();
 
   useEffect(() => {
@@ -196,11 +199,36 @@ function AppContent() {
     );
   }
 
-  // ── Landlord Portal (unchanged logic below) ──
-  if (!user) {
+  // ── Agent Portal (self-contained) ──
+  if (selectedPortal === 'agent') {
     return (
       <>
-        <LoginScreen onLoginSuccess={handleLoginSuccess} />
+        <AgentPortal onBackToPortalSelector={handleBackToSelector} />
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+      </>
+    );
+  }
+
+  // ── Landlord Portal (unchanged logic below) ──
+  if (!user) {
+    if (showLandlordRegister) {
+      return (
+        <>
+          <RegisterScreen
+            onRegisterSuccess={(u) => { setShowLandlordRegister(false); handleLoginSuccess(u); }}
+            onBack={() => setShowLandlordRegister(false)}
+          />
+          <StatusBar style={isDark ? 'light' : 'dark'} />
+        </>
+      );
+    }
+    return (
+      <>
+        <LoginScreen
+          onLoginSuccess={handleLoginSuccess}
+          onBack={handleBackToSelector}
+          onCreateAccount={() => setShowLandlordRegister(true)}
+        />
         <StatusBar style={isDark ? 'light' : 'dark'} />
       </>
     );

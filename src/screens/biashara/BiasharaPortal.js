@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, AppState } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
-import { biasharaAuthAPI } from '../../services/api';
+import { biasharaAuthAPI, biasharaBusinessAPI } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { FontSize, Spacing } from '../../constants/theme';
 
@@ -10,15 +10,18 @@ import BiasharaLoginScreen from './BiasharaLoginScreen';
 import BiasharaOverviewScreen from './BiasharaOverviewScreen';
 import BiasharaListingsScreen from './BiasharaListingsScreen';
 import BiasharaAccountScreen from './BiasharaAccountScreen';
+import BiasharaAnalyticsScreen from './BiasharaAnalyticsScreen';
 import RegisterBusinessScreen from './RegisterBusinessScreen';
-import { GridIcon, StoreIcon, UserIcon } from './Icons';
+import BiasharaRegisterScreen from './BiasharaRegisterScreen';
+import { GridIcon, StoreIcon, UserIcon, BarChartIcon } from './Icons';
 
 const ACCENT = '#fbbf24';
 
 const TABS = [
-  { key: 'overview',  label: 'Overview',      Icon: GridIcon  },
-  { key: 'listings',  label: 'My Businesses', Icon: StoreIcon },
-  { key: 'account',   label: 'Account',       Icon: UserIcon  },
+  { key: 'overview',   label: 'Overview',    Icon: GridIcon       },
+  { key: 'listings',   label: 'Businesses',  Icon: StoreIcon      },
+  { key: 'analytics',  label: 'Analytics',   Icon: BarChartIcon   },
+  { key: 'account',    label: 'Account',     Icon: UserIcon       },
 ];
 
 function BottomTabBar({ activeTab, setActiveTab, colors, insets }) {
@@ -67,6 +70,27 @@ export default function BiasharaPortal({ onBackToPortalSelector }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [showRegister, setShowRegister] = useState(false);
 
+  // Multi-business state — shared across all tabs
+  const [businesses, setBusinesses] = useState([]);
+  const [businessesLoading, setBusinessesLoading] = useState(false);
+
+  // Register/Edit flow — null = closed, undefined = new, business object = edit
+  const [editTarget, setEditTarget] = useState(null); // null = form hidden
+  const [showForm, setShowForm] = useState(false);
+
+  // Fetch all businesses owned by this user
+  const refreshBusinesses = useCallback(async () => {
+    setBusinessesLoading(true);
+    try {
+      const res = await biasharaBusinessAPI.getMyBusiness();
+      setBusinesses(res?.businesses || []);
+    } catch (err) {
+      console.error('Failed to load businesses:', err.message);
+    } finally {
+      setBusinessesLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     const restore = async () => {
       try {
@@ -88,6 +112,20 @@ export default function BiasharaPortal({ onBackToPortalSelector }) {
     restore();
   }, []);
 
+  // Once we have a user, load their businesses + auto-sync
+  // Any business deleted on the website disappears here within 60s automatically
+  useEffect(() => {
+    if (!user) return;
+    refreshBusinesses();
+
+    const appStateSub = AppState.addEventListener('change', s => {
+      if (s === 'active') refreshBusinesses();
+    });
+    const poll = setInterval(() => refreshBusinesses(), 60000);
+
+    return () => { appStateSub.remove(); clearInterval(poll); };
+  }, [user, refreshBusinesses]);
+
   const handleLoginSuccess = (loggedInUser) => {
     setUser(loggedInUser);
     setDisplayUser(loggedInUser);
@@ -98,10 +136,9 @@ export default function BiasharaPortal({ onBackToPortalSelector }) {
     await SecureStore.deleteItemAsync('biashara_token');
     setUser(null);
     setDisplayUser(null);
+    setBusinesses([]);
   };
 
-  // Called immediately with the local avatar URI so all tabs update without
-  // waiting for the server. Background server fetch follows to get the CDN URL.
   const handleProfileUpdated = (updatedFields, localAvatarUri) => {
     if (updatedFields || localAvatarUri) {
       setDisplayUser(prev => ({
@@ -110,7 +147,7 @@ export default function BiasharaPortal({ onBackToPortalSelector }) {
         ...(localAvatarUri ? { profileImage: localAvatarUri, avatar: localAvatarUri } : {}),
       }));
     }
-    // Background server refresh — updates to real CDN URL
+    // Background server refresh to get CDN URL
     biasharaAuthAPI.getMe().then(response => {
       if (response && (response.user || response._id)) {
         const fresh = response.user || response;
@@ -120,11 +157,49 @@ export default function BiasharaPortal({ onBackToPortalSelector }) {
     }).catch(() => {});
   };
 
-  // Sync displayUser when user state changes (e.g. after server refresh)
+  // Sync displayUser when user state changes
   useEffect(() => {
-    if (user) setDisplayUser(prev => ({ ...user, ...(prev?.profileImage && !user.profileImage ? { profileImage: prev.profileImage, avatar: prev.avatar } : {}) }));
+    if (user) setDisplayUser(prev => ({
+      ...user,
+      ...(prev?.profileImage && !user.profileImage
+        ? { profileImage: prev.profileImage, avatar: prev.avatar }
+        : {}),
+    }));
   }, [user]);
 
+  // ── Business form helpers ──────────────────────────────────────
+  const openRegister = () => {
+    setEditTarget(undefined); // undefined = new business
+    setShowForm(true);
+  };
+
+  const openEdit = (business) => {
+    setEditTarget(business); // pass existing business to edit
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditTarget(null);
+  };
+
+  const handleFormDone = () => {
+    closeForm();
+    setActiveTab('listings');
+    refreshBusinesses(); // reload the businesses list
+  };
+
+  // ── Delete business ──────────────────────────────────────────
+  const handleDelete = useCallback(async (businessId) => {
+    try {
+      await biasharaBusinessAPI.deleteBusiness(businessId);
+      setBusinesses(prev => prev.filter(b => b._id !== businessId));
+    } catch (err) {
+      throw err; // let the caller show the alert
+    }
+  }, []);
+
+  // ── Loading / Auth gates ──────────────────────────────────────
   if (checkingSession) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
@@ -134,27 +209,34 @@ export default function BiasharaPortal({ onBackToPortalSelector }) {
   }
 
   if (!user) {
+    if (showRegister) {
+      return (
+        <BiasharaRegisterScreen
+          onRegisterSuccess={(u) => { setShowRegister(false); handleLoginSuccess(u); }}
+          onBack={() => setShowRegister(false)}
+        />
+      );
+    }
     return (
       <BiasharaLoginScreen
         onLoginSuccess={handleLoginSuccess}
         onBack={onBackToPortalSelector}
+        onCreateAccount={() => setShowRegister(true)}
       />
     );
   }
 
   const shownUser = displayUser || user;
 
-  // Register Business — full-screen overlay (hides tab bar)
-  if (showRegister) {
+  // Register/Edit form — full-screen overlay (hides tab bar)
+  if (showForm) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         <RegisterBusinessScreen
           user={shownUser}
-          onBack={() => setShowRegister(false)}
-          onDone={() => {
-            setShowRegister(false);
-            setActiveTab('listings');
-          }}
+          business={editTarget}       // undefined = create, object = edit
+          onBack={closeForm}
+          onDone={handleFormDone}
         />
       </View>
     );
@@ -163,20 +245,33 @@ export default function BiasharaPortal({ onBackToPortalSelector }) {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Keep all tabs mounted but hide inactive ones to preserve state */}
-      <View style={{ flex: 1, display: activeTab === 'overview' ? 'flex' : 'none' }}>
+      <View style={{ flex: 1, display: activeTab === 'overview'  ? 'flex' : 'none' }}>
         <BiasharaOverviewScreen
           user={shownUser}
-          onLogout={handleLogout}
-          onRegisterBusiness={() => setShowRegister(true)}
+          businesses={businesses}
+          businessesLoading={businessesLoading}
+          onRegisterBusiness={openRegister}
+          onRefreshBusinesses={refreshBusinesses}
         />
       </View>
-      <View style={{ flex: 1, display: activeTab === 'listings' ? 'flex' : 'none' }}>
+      <View style={{ flex: 1, display: activeTab === 'listings'  ? 'flex' : 'none' }}>
         <BiasharaListingsScreen
           user={shownUser}
-          onRegisterBusiness={() => setShowRegister(true)}
+          businesses={businesses}
+          businessesLoading={businessesLoading}
+          onRegisterBusiness={openRegister}
+          onEditBusiness={openEdit}
+          onDeleteBusiness={handleDelete}
+          onRefresh={refreshBusinesses}
         />
       </View>
-      <View style={{ flex: 1, display: activeTab === 'account' ? 'flex' : 'none' }}>
+      <View style={{ flex: 1, display: activeTab === 'analytics' ? 'flex' : 'none' }}>
+        <BiasharaAnalyticsScreen
+          businesses={businesses}
+          onBack={() => setActiveTab('overview')}
+        />
+      </View>
+      <View style={{ flex: 1, display: activeTab === 'account'   ? 'flex' : 'none' }}>
         <BiasharaAccountScreen
           user={shownUser}
           onLogout={handleLogout}

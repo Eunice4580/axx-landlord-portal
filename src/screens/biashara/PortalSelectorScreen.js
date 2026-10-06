@@ -33,6 +33,14 @@ const HomeIcon = ({ color, size = 22 }) => (
   </Svg>
 );
 
+const AgentIcon = ({ color, size = 22 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+    stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <Rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+    <Path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+  </Svg>
+);
+
 const ChevronRight = ({ color, size = 18 }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"
     stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -61,6 +69,13 @@ const PORTALS = [
     subtitle: 'Manage properties & bookings',
     accent: '#10b981',
     Icon: HomeIcon,
+  },
+  {
+    key: 'agent',
+    title: 'Agent Portal',
+    subtitle: 'Manage listings & partnerships',
+    accent: '#fbbf24',
+    Icon: AgentIcon,
   },
 ];
 

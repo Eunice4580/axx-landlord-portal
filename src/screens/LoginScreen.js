@@ -61,7 +61,7 @@ const LockIcon = ({ color, size = 18 }) => (
   </Svg>
 );
 
-export default function LoginScreen({ onLoginSuccess }) {
+export default function LoginScreen({ onLoginSuccess, onBack, onCreateAccount }) {
   const { colors } = useTheme();
   const [selectedRole, setSelectedRole] = useState('landlord');
   const [email, setEmail] = useState('');
@@ -228,6 +228,24 @@ export default function LoginScreen({ onLoginSuccess }) {
           <Text style={[s.footer, { color: colors.textMuted }]}>
             AXX Spaces Manager
           </Text>
+
+          {/* Back to Portal Selector */}
+          {onBack && (
+            <TouchableOpacity onPress={onBack} style={{ alignItems: 'center', marginTop: 16 }}>
+              <Text style={{ color: PRIMARY, fontSize: 13, fontWeight: '700' }}>
+                ← Back to Portal Selector
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Create Account */}
+          {onCreateAccount && (
+            <TouchableOpacity onPress={onCreateAccount} style={{ alignItems: 'center', marginTop: 12 }}>
+              <Text style={{ color: PRIMARY, fontSize: 13, fontWeight: '700' }}>
+                Don't have an account? Create Account
+              </Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

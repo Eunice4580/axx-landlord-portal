@@ -9,13 +9,14 @@ import AccommodationLoginScreen from './AccommodationLoginScreen';
 import AccommodationOverviewScreen from './AccommodationOverviewScreen';
 import AccommodationBookingsScreen from './AccommodationBookingsScreen';
 import AccommodationAccountScreen from './AccommodationAccountScreen';
+import AccommodationRegisterScreen from './AccommodationRegisterScreen';
 import { HomeIcon, CalendarIcon, UserIcon } from './AccomIcons';
 
 const ACCENT = '#10b981';
 const API_BASE = 'https://axx-spaces-backend-1.onrender.com/api';
 
 const TABS = [
-  { key: 'overview',  label: 'Overview',  Icon: HomeIcon     },
+  { key: 'overview',  label: 'Dashboard', Icon: HomeIcon     },
   { key: 'bookings',  label: 'Bookings',  Icon: CalendarIcon },
   { key: 'account',   label: 'Account',   Icon: UserIcon     },
 ];
@@ -59,6 +60,7 @@ export default function AccommodationPortal({ onBackToPortalSelector }) {
   const [checkingSession, setCheckingSession] = useState(true);
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [showRegister, setShowRegister] = useState(false);
 
   useEffect(() => {
     const restore = async () => {
@@ -71,7 +73,7 @@ export default function AccommodationPortal({ onBackToPortalSelector }) {
           const data = await res.json();
           if (res.ok && (data.user || data._id)) {
             const u = data.user || data;
-            if (u.role === 'host') {
+            if (u.role === 'host' || u.role === 'landlord') {
               setUser(u);
             } else {
               await SecureStore.deleteItemAsync('accom_token');
@@ -99,6 +101,14 @@ export default function AccommodationPortal({ onBackToPortalSelector }) {
     setUser(null);
   };
 
+  const handleProfileUpdated = (updatedFields, avatarUri) => {
+    setUser(prev => ({
+      ...prev,
+      ...updatedFields,
+      ...(avatarUri ? { profileImage: avatarUri, avatar: avatarUri } : {}),
+    }));
+  };
+
   if (checkingSession) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
@@ -108,10 +118,19 @@ export default function AccommodationPortal({ onBackToPortalSelector }) {
   }
 
   if (!user) {
+    if (showRegister) {
+      return (
+        <AccommodationRegisterScreen
+          onRegisterSuccess={(u) => { setShowRegister(false); handleLoginSuccess(u); }}
+          onBack={() => setShowRegister(false)}
+        />
+      );
+    }
     return (
       <AccommodationLoginScreen
         onLoginSuccess={handleLoginSuccess}
         onBack={onBackToPortalSelector}
+        onCreateAccount={() => setShowRegister(true)}
       />
     );
   }
@@ -120,7 +139,13 @@ export default function AccommodationPortal({ onBackToPortalSelector }) {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {activeTab === 'overview' && <AccommodationOverviewScreen user={user} />}
       {activeTab === 'bookings' && <AccommodationBookingsScreen user={user} />}
-      {activeTab === 'account'  && <AccommodationAccountScreen user={user} onLogout={handleLogout} />}
+      {activeTab === 'account'  && (
+        <AccommodationAccountScreen
+          user={user}
+          onLogout={handleLogout}
+          onProfileUpdated={handleProfileUpdated}
+        />
+      )}
 
       <BottomTabBar
         activeTab={activeTab}

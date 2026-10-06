@@ -95,7 +95,7 @@ function BookingCard({ item, colors }) {
         <View style={[styles.amountRow, { borderTopColor: colors.border }]}>
           <Text style={[styles.amountLabel, { color: colors.textMuted }]}>Total</Text>
           <Text style={[styles.amountValue, { color: ACCENT }]}>
-            KES {Number(item.totalAmount).toLocaleString()}
+            KSh {Number(item.totalAmount).toLocaleString()}
           </Text>
         </View>
       )}

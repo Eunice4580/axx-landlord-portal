@@ -12,7 +12,7 @@ import { ArrowLeftIcon, EyeIcon, EyeOffIcon, CheckIcon, AlertIcon, StoreIcon } f
 
 const ACCENT = '#fbbf24';
 
-export default function BiasharaLoginScreen({ onLoginSuccess, onBack }) {
+export default function BiasharaLoginScreen({ onLoginSuccess, onBack, onCreateAccount }) {
   const { colors } = useTheme();
   const [mode, setMode] = useState('login'); // 'login' | 'forgot'
   const [email, setEmail] = useState('');
@@ -153,14 +153,17 @@ export default function BiasharaLoginScreen({ onLoginSuccess, onBack }) {
             </TouchableOpacity>
           </View>
 
-          {/* Register note — direct to website */}
-          <View style={[s.registerNote, { borderColor: colors.border, backgroundColor: colors.backgroundElement }]}>
+          {/* Create account — in-app */}
+          <TouchableOpacity
+            style={[s.registerNote, { borderColor: ACCENT + '50', backgroundColor: 'rgba(251,191,36,0.07)' }]}
+            onPress={onCreateAccount}
+            activeOpacity={0.8}
+          >
             <Text style={[s.registerNoteText, { color: colors.textMuted }]}>
               Don't have an account yet?{'\n'}
-              Register your business at{' '}
-              <Text style={{ color: ACCENT, fontWeight: '700' }}>axxspace.com/axxbiashara</Text>
+              <Text style={{ color: ACCENT, fontWeight: '800' }}>Create Account →</Text>
             </Text>
-          </View>
+          </TouchableOpacity>
 
           <Text style={[s.footer, { color: colors.textMuted }]}>AxxBiashara — Manage your business anytime, anywhere.</Text>
         </ScrollView>

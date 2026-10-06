@@ -7,7 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as SecureStore from 'expo-secure-store';
-import { biasharaProfileAPI, biasharaBusinessAPI } from '../../services/api';
+import { biasharaProfileAPI } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { Spacing, BorderRadius, FontSize } from '../../constants/theme';
 import {
@@ -382,22 +382,12 @@ function EditBusinessView({ business, colors, onDone }) {
 export default function BiasharaAccountScreen({ user, onLogout, onProfileUpdated }) {
   const { colors, isDark, toggleTheme } = useTheme();
   const [view, setView] = useState('main');
-  const [business, setBusiness] = useState(null);
-  const [loadingBiz, setLoadingBiz] = useState(true);
-
   // Local copy of user — updated immediately on save so the Account tab
   // reflects the new name/avatar instantly, without waiting for a server refresh.
   const [localUser, setLocalUser] = useState(user);
 
   // When the parent BiasharaPortal re-fetches from server, sync down here
   useEffect(() => { setLocalUser(user); }, [user]);
-
-  useEffect(() => {
-    biasharaBusinessAPI.getMyBusiness()
-      .then(res => setBusiness(res.business || res || null))
-      .catch(() => {})
-      .finally(() => setLoadingBiz(false));
-  }, []);
 
   // Called by EditProfileView right after a successful XHR save.
   // Immediately reflects the typed name/phone and picked avatar URI.
@@ -434,7 +424,6 @@ export default function BiasharaAccountScreen({ user, onLogout, onProfileUpdated
         onProfileSaved={handleProfileSaved}
       />
     );
-    if (view === 'editBusiness') return <EditBusinessView business={business} colors={colors} onDone={back} />;
     return null;
   };
 
@@ -448,7 +437,7 @@ export default function BiasharaAccountScreen({ user, onLogout, onProfileUpdated
           </TouchableOpacity>
         ) : <View style={styles.headerBack} />}
         <Text style={[styles.headerTitle, { color: colors.text }]}>
-          {view === 'main' ? 'Account' : view === 'editProfile' ? 'Edit Profile' : view === 'changePassword' ? 'Change Password' : 'Edit Business'}
+          {view === 'main' ? 'Account' : view === 'editProfile' ? 'Edit Profile' : 'Change Password'}
         </Text>
         <View style={styles.headerBack} />
       </View>
@@ -512,27 +501,18 @@ export default function BiasharaAccountScreen({ user, onLogout, onProfileUpdated
                   <SectionRow Icon={EyeOffIcon} label="Change Password" sub="Update your account password" onPress={() => setView('changePassword')} colors={colors} />
                 </View>
 
-                {/* My Business */}
-                <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>MY BUSINESS</Text>
+                {/* My Businesses (pointer) */}
+                <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>MY BUSINESSES</Text>
                 <View style={[styles.menuCard, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
-                  {loadingBiz ? (
-                    <View style={styles.menuRow}>
-                      <ActivityIndicator color={ACCENT} size="small" />
-                      <Text style={[styles.menuSub, { color: colors.textMuted, marginLeft: 10 }]}>Loading business…</Text>
+                  <View style={styles.menuRow}>
+                    <View style={[styles.menuIcon, { backgroundColor: ACCENT + '15' }]}>
+                      <StoreIcon color={ACCENT} size={18} />
                     </View>
-                  ) : business ? (
-                    <SectionRow
-                      Icon={StoreIcon}
-                      label="Edit Business Profile"
-                      sub={`${business.name} — description, contact, hours, social`}
-                      onPress={() => setView('editBusiness')}
-                      colors={colors}
-                    />
-                  ) : (
-                    <View style={styles.menuRow}>
-                      <Text style={[styles.menuSub, { color: colors.textMuted }]}>No business listing linked to this account.</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.menuLabel, { color: colors.text }]}>Manage Businesses</Text>
+                      <Text style={[styles.menuSub, { color: colors.textMuted }]}>Edit, delete or boost listings in the My Businesses tab</Text>
                     </View>
-                  )}
+                  </View>
                 </View>
 
                 {/* Session */}
