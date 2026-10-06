@@ -136,23 +136,23 @@ function SingleChips({ options, selected, onSelect, colors }) {
 }
 
 /* ── Image upload via XHR to Cloudinary ─────────────────────── */
-async function uploadToCloudinary(uri, preset = 'biashara_upload') {
+async function uploadToCloudinary(uri, kind = 'photo') {
   const filename = uri.split('/').pop();
   const ext = filename.split('.').pop()?.toLowerCase();
   const mimeMap = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
   const mime = mimeMap[ext] || 'image/jpeg';
 
   const form = new FormData();
-  form.append('file', { uri, name: filename, type: mime });
-  form.append('upload_preset', preset);
+  form.append(kind === 'logo' ? 'logo' : 'photo', { uri, name: filename, type: mime });
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`);
+    xhr.open('POST', `${API_BASE}/uploads/${kind === 'logo' ? 'logo' : 'business-photo'}`);
     xhr.onload = () => {
-      const res = JSON.parse(xhr.responseText);
-      if (xhr.status === 200) resolve(res.secure_url);
-      else reject(new Error(res.error?.message || 'Upload failed'));
+      let res = {};
+      try { res = JSON.parse(xhr.responseText); } catch {}
+      if (xhr.status >= 200 && xhr.status < 300 && res.url) resolve(res.url);
+      else reject(new Error(res.error || res.message || 'Upload failed (' + xhr.status + ')'));
     };
     xhr.onerror = () => reject(new Error('Network error during upload'));
     xhr.send(form);
@@ -274,7 +274,7 @@ export default function RegisterBusinessScreen({ user, business, onDone, onBack 
       let logoUrl = logo?.url || null;
       if (logo?.uri && !logo.url) {
         setUploading(true);
-        logoUrl = await uploadToCloudinary(logo.uri);
+        logoUrl = await uploadToCloudinary(logo.uri, 'logo');
         setUploading(false);
       }
 
