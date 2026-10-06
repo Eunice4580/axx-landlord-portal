@@ -150,7 +150,6 @@ export default function AgentPortal({ onBackToPortalSelector }) {
           user={user}
           onUpload={() => setScreen('upload')}
           onNotifications={() => setScreen('notifications')}
-          onUpgradePackage={() => setScreen('package')}
         />
       )}
       {activeTab === 'account' && (

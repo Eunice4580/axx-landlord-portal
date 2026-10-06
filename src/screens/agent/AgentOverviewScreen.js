@@ -367,7 +367,7 @@ function RequestCard({ req }) {
 }
 
 /* ── Main Screen ────────────────────────────────────────────────────── */
-export default function AgentOverviewScreen({ user, onUpload, onNotifications, onUpgradePackage }) {
+export default function AgentOverviewScreen({ user, onUpload, onNotifications }) {
   const [myHouses, setMyHouses] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -480,15 +480,6 @@ export default function AgentOverviewScreen({ user, onUpload, onNotifications, o
           <TouchableOpacity onPress={() => { setRefreshing(true); loadData(true); }} style={{ padding: 4 }}>
             <RefreshIcon size={18} color={C.logoAccent} />
           </TouchableOpacity>
-          {onUpgradePackage && (
-            <TouchableOpacity
-              style={{ backgroundColor: '#fbbf24', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 }}
-              onPress={onUpgradePackage}
-              activeOpacity={0.8}
-            >
-              <Text style={{ color: '#1f2937', fontSize: 12, fontWeight: '700' }}>⭐ Upgrade Package</Text>
-            </TouchableOpacity>
-          )}
           {onNotifications && (
             <TouchableOpacity onPress={onNotifications} style={{ padding: 4 }} activeOpacity={0.7}>
               <BellIcon size={20} color={C.logoAccent} />
