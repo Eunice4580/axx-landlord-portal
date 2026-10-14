@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import * as Updates from 'expo-updates';
 import { StatusBar } from 'expo-status-bar';
 import * as SecureStore from 'expo-secure-store';
 import { NavigationContainer } from '@react-navigation/native';
@@ -89,6 +90,24 @@ function AppContent() {
   const [resetToken, setResetToken] = useState(null);
   const [showLandlordRegister, setShowLandlordRegister] = useState(false);
   const { isDark, colors } = useTheme();
+
+  // Check for OTA updates on every cold launch
+  useEffect(() => {
+    async function checkForUpdate() {
+      try {
+        if (!Updates.isEmbeddedLaunch) return; // skip in dev
+        const update = await Updates.checkForUpdateAsync();
+        if (update.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          await Updates.reloadAsync(); // restart app with new bundle
+        }
+      } catch (e) {
+        // silently ignore — don't crash if offline or update check fails
+        console.log('OTA update check failed:', e.message);
+      }
+    }
+    checkForUpdate();
+  }, []);
 
   useEffect(() => {
     const handleUrl = (url) => {
