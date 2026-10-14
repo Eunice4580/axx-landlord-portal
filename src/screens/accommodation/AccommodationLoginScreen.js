@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ActivityIndicator, KeyboardAvoidingView, ScrollView, Platform,
+  ActivityIndicator, KeyboardAvoidingView, ScrollView, Platform, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
@@ -116,9 +116,7 @@ export default function AccommodationLoginScreen({ onLoginSuccess, onBack, onCre
           </TouchableOpacity>
 
           <View style={s.brand}>
-            <View style={[s.logoMark, { backgroundColor: ACCENT }]}>
-              <HomeIcon color="#fff" size={30} />
-            </View>
+            <Image source={require('../../../assets/axx-logo.jpg')} style={s.logoImage} resizeMode="contain" />
             <Text style={[s.brandName, { color: colors.text }]}>Accommodation</Text>
             <Text style={s.tagline}>Provider & Host Portal</Text>
             <View style={[s.pill, { backgroundColor: ACCENT + '18', borderColor: ACCENT + '35' }]}>
@@ -183,6 +181,7 @@ const getStyles = (colors) => StyleSheet.create({
   backText: { fontSize: FontSize.sm, fontWeight: '700' },
   brand: { alignItems: 'center', marginBottom: Spacing.four },
   logoMark: { width: 72, height: 72, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.two, shadowColor: ACCENT, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.4, shadowRadius: 20, elevation: 10 },
+  logoImage: { width: 88, height: 88, borderRadius: 20, marginBottom: Spacing.two, backgroundColor: '#fff' },
   brandName: { fontSize: 30, fontWeight: '900', letterSpacing: -0.5 },
   tagline: { fontSize: FontSize.sm, color: '#94a3b8', marginTop: 4, fontWeight: '600', letterSpacing: 0.3 },
   pill: { marginTop: 10, borderWidth: 1, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5 },

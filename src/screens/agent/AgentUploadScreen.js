@@ -4,6 +4,7 @@ import {
   ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform,
   Image, Alert,
 } from 'react-native';
+import LocateButton from '../../components/LocateButton';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as SecureStore from 'expo-secure-store';
@@ -324,6 +325,8 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
           onFocus={() => setFocused(f => ({ ...f, propertyType: true }))}
           onBlur={() => setFocused(f => ({ ...f, propertyType: false }))}
         />
+
+        <LocateButton counties={KENYA_COUNTIES} onFound={p => { if (p.county) set('county', p.county); const area = [p.town, p.county].filter(Boolean).join(', '); if (area && !String(form.location || '').trim()) set('location', area); }} />
 
         <Picker
           label="County *"

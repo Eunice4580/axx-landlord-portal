@@ -4,6 +4,7 @@ import {
   ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView,
   Platform, Image,
 } from 'react-native';
+import LocateButton from '../../components/LocateButton';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as SecureStore from 'expo-secure-store';
@@ -66,6 +67,7 @@ export default function RegisterAccommodationScreen({ itemToEdit, onBack, onSucc
   const [description, setDescription] = useState(itemToEdit?.description || '');
   const [county, setCounty] = useState(itemToEdit?.location?.county || itemToEdit?.county || 'Nairobi City');
   const [town, setTown] = useState(itemToEdit?.location?.town || itemToEdit?.town || '');
+  const [coords, setCoords] = useState(null);
   const [address, setAddress] = useState(itemToEdit?.location?.address || itemToEdit?.address || '');
   const [basePrice, setBasePrice] = useState(itemToEdit?.pricing?.basePrice ? String(itemToEdit.pricing.basePrice) : (itemToEdit?.basePrice ? String(itemToEdit.basePrice) : ''));
   const [totalRooms, setTotalRooms] = useState(itemToEdit?.totalRooms ? String(itemToEdit.totalRooms) : '1');
@@ -136,8 +138,8 @@ export default function RegisterAccommodationScreen({ itemToEdit, onBack, onSucc
       fd.append('county', county.trim());
       fd.append('town', town.trim());
       fd.append('address', address.trim());
-      fd.append('lat', String(itemToEdit?.location?.coordinates?.[1] || itemToEdit?.lat || -1.286389));
-      fd.append('lng', String(itemToEdit?.location?.coordinates?.[0] || itemToEdit?.lng || 36.817223));
+      fd.append('lat', String((coords && coords.lat) || itemToEdit?.location?.coordinates?.[1] || itemToEdit?.lat || -1.286389));
+      fd.append('lng', String((coords && coords.lng) || itemToEdit?.location?.coordinates?.[0] || itemToEdit?.lng || 36.817223));
       fd.append('basePrice', basePrice.trim());
       fd.append('totalRooms', totalRooms.trim() || '1');
       fd.append('maxGuests', maxGuests.trim() || '2');
@@ -268,6 +270,8 @@ export default function RegisterAccommodationScreen({ itemToEdit, onBack, onSucc
           {/* Section 2: Location Details */}
           <View style={s.card}>
             <Text style={s.cardTitle}>Location Details</Text>
+
+            <LocateButton counties={COUNTIES} onFound={p => { setCoords({ lat: p.lat, lng: p.lng }); if (p.county) setCounty(p.county); if (p.town && !town.trim()) setTown(p.town); }} />
 
             <Text style={s.label}>County *</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.chipScroll}>

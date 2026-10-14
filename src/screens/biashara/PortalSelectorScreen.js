@@ -153,7 +153,7 @@ export default function PortalSelectorScreen({ onSelectPortal }) {
           opacity: headerAnim,
           transform: [{ translateY: headerAnim.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }],
         }]}>
-          <Image source={require('../../../assets/icon.png')} style={styles.logoImage} resizeMode="contain" />
+          <Image source={require('../../../assets/axx-logo.jpg')} style={styles.logoImage} resizeMode="contain" />
           <Text style={[styles.brandName, { color: colors.text }]}>AXXSPACE</Text>
           <Text style={[styles.brandSub, { color: colors.textMuted }]}>Select your portal to continue</Text>
         </Animated.View>
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4, shadowRadius: 20, elevation: 10,
   },
   logoText: { color: '#fff', fontSize: 22, fontWeight: '900', letterSpacing: 3 },
-  logoImage: { width: 72, height: 72, borderRadius: 18, marginBottom: Spacing.two },
+  logoImage: { width: 80, height: 80, borderRadius: 20, marginBottom: Spacing.two, backgroundColor: '#fff' },
   brandName: { fontSize: 26, fontWeight: '900', letterSpacing: 4, marginBottom: 6 },
   brandSub: { fontSize: FontSize.sm, fontWeight: '500', letterSpacing: 0.3 },
 

@@ -3,6 +3,8 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, Image,
 } from 'react-native';
+import * as ImageManipulator from 'expo-image-manipulator';
+import LocateButton from '../../components/LocateButton';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { biasharaBusinessAPI } from '../../services/api';
@@ -136,6 +138,19 @@ function SingleChips({ options, selected, onSelect, colors }) {
 }
 
 /* ── Image upload via XHR to Cloudinary ─────────────────────── */
+/* Shrink picked images so they stay under the server size limits */
+async function shrinkImage(uri, srcWidth, maxWidth = 1600) {
+  try {
+    const ctx = ImageManipulator.ImageManipulator.manipulate(uri);
+    if (!srcWidth || srcWidth > maxWidth) ctx.resize({ width: maxWidth });
+    const img = await ctx.renderAsync();
+    const out = await img.saveAsync({ compress: 0.7, format: ImageManipulator.SaveFormat.JPEG });
+    return out.uri;
+  } catch (e) {
+    return uri;
+  }
+}
+
 async function uploadToCloudinary(uri, kind = 'photo') {
   const filename = uri.split('/').pop();
   const ext = filename.split('.').pop()?.toLowerCase();
@@ -240,7 +255,7 @@ export default function RegisterBusinessScreen({ user, business, onDone, onBack 
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true, aspect: [1, 1], quality: 0.8,
     });
-    if (!res.canceled && res.assets?.[0]) setLogo({ uri: res.assets[0].uri });
+    if (!res.canceled && res.assets?.[0]) setLogo({ uri: await shrinkImage(res.assets[0].uri, res.assets[0].width, 1000) });
   };
 
   const pickPhotos = async () => {
@@ -251,7 +266,8 @@ export default function RegisterBusinessScreen({ user, business, onDone, onBack 
       allowsMultipleSelection: true, quality: 0.8, selectionLimit: 6,
     });
     if (!res.canceled && res.assets?.length) {
-      setPhotos(prev => [...prev, ...res.assets.map(a => ({ uri: a.uri }))].slice(0, 6));
+      const shrunk = await Promise.all(res.assets.map(async a => ({ uri: await shrinkImage(a.uri, a.width) })));
+      setPhotos(prev => [...prev, ...shrunk].slice(0, 6));
     }
   };
 
@@ -387,6 +403,8 @@ export default function RegisterBusinessScreen({ user, business, onDone, onBack 
 
           {/* ── Location ── */}
           <SectionHeader title="LOCATION" colors={colors} />
+
+          <LocateButton counties={COUNTIES} accent={ACCENT} textColor={ACCENT} onFound={p => { setLat(p.lat.toFixed(6)); setLng(p.lng.toFixed(6)); if (p.county) setCounty(p.county); if (p.town && !town.trim()) setTown(p.town); }} />
 
           <Field label="County" colors={colors} required>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>

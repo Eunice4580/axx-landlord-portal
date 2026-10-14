@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   Alert, ActivityIndicator, Animated, KeyboardAvoidingView,
-  ScrollView, Platform,
+  ScrollView, Platform, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle, Line, Polyline } from 'react-native-svg';
@@ -131,9 +131,11 @@ export default function LoginScreen({ onLoginSuccess, onBack, onCreateAccount })
 
           {/* Brand */}
           <View style={s.brand}>
-            <View style={[s.logoMark, { backgroundColor: PRIMARY }]}>
-              <Text style={s.logoText}>AXX</Text>
-            </View>
+            <Image
+              source={require('../../assets/axx-logo.jpg')}
+              style={s.logoImage}
+              resizeMode="contain"
+            />
             <Text style={[s.brandName, { color: colors.text }]}>AXXSPACE</Text>
             <Text style={[s.brandSub, { color: colors.textMuted }]}>Property Manager</Text>
           </View>
@@ -257,14 +259,13 @@ const getStyles = (colors) => StyleSheet.create({
   scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: Spacing.four, paddingBottom: Spacing.four },
 
   brand: { alignItems: 'center', marginBottom: Spacing.five },
-  logoMark: {
-    width: 76, height: 76, borderRadius: 22,
-    justifyContent: 'center', alignItems: 'center',
+  logoImage: {
+    width: 88, height: 88, borderRadius: 22,
     marginBottom: Spacing.two,
+    backgroundColor: '#fff',
     shadowColor: '#e11d48', shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.45, shadowRadius: 22, elevation: 12,
+    shadowOpacity: 0.25, shadowRadius: 22, elevation: 8,
   },
-  logoText: { color: '#fff', fontSize: 22, fontWeight: '900', letterSpacing: 3 },
   brandName: { fontSize: 26, fontWeight: '900', letterSpacing: 4, marginBottom: 4 },
   brandSub: { fontSize: FontSize.sm, fontWeight: '500', letterSpacing: 0.5 },
 

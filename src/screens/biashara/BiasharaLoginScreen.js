@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ActivityIndicator, KeyboardAvoidingView, ScrollView, Platform,
+  ActivityIndicator, KeyboardAvoidingView, ScrollView, Platform, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
@@ -74,9 +74,7 @@ export default function BiasharaLoginScreen({ onLoginSuccess, onBack, onCreateAc
               <Text style={[s.backText, { color: ACCENT }]}>  Back to Sign In</Text>
             </TouchableOpacity>
             <View style={s.brandBlock}>
-              <View style={[s.logoMark, { backgroundColor: ACCENT }]}>
-                <StoreIcon color="#0f172a" size={28} />
-              </View>
+              <Image source={require('../../../assets/marketplace-logo.png')} style={styles2.marketplaceLogo} resizeMode="contain" />
               <Text style={[s.brandName, { color: colors.text }]}>Reset Password</Text>
               <Text style={s.tagline}>Enter your email for a reset link</Text>
             </View>
@@ -112,9 +110,7 @@ export default function BiasharaLoginScreen({ onLoginSuccess, onBack, onCreateAc
           </TouchableOpacity>
 
           <View style={s.brandBlock}>
-            <View style={[s.logoMark, { backgroundColor: ACCENT }]}>
-              <StoreIcon color="#0f172a" size={28} />
-            </View>
+            <Image source={require('../../../assets/marketplace-logo.png')} style={styles2.marketplaceLogo} resizeMode="contain" />
             <Text style={[s.brandName, { color: colors.text }]}>AxxBiashara</Text>
             <Text style={s.tagline}>Business Owner Portal</Text>
             <View style={[s.taglinePill, { backgroundColor: ACCENT + '18', borderColor: ACCENT + '30' }]}>
@@ -201,4 +197,14 @@ const getStyles = (colors) => StyleSheet.create({
   registerNote: { marginTop: Spacing.four, borderWidth: 1, borderRadius: BorderRadius.md, padding: Spacing.three, alignItems: 'center' },
   registerNoteText: { fontSize: FontSize.sm, textAlign: 'center', lineHeight: 20 },
   footer: { textAlign: 'center', fontSize: FontSize.xs, marginTop: Spacing.four },
+});
+
+const styles2 = StyleSheet.create({
+  marketplaceLogo: {
+    width: 90,
+    height: 90,
+    borderRadius: 20,
+    marginBottom: Spacing.two,
+    backgroundColor: '#fff',
+  },
 });

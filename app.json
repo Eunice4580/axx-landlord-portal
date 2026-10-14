@@ -13,7 +13,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#FB040D"
       },
       "package": "com.axxspace.landlordportal"
     },
@@ -23,7 +23,13 @@
     "plugins": [
       "expo-secure-store",
       "expo-status-bar",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Axxspace Manager to use your location to fill in your property or business address."
+        }
+      ]
     ],
     "extra": {
       "eas": {

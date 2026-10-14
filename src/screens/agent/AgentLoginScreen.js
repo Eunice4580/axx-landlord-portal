@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView,
+  ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
@@ -86,11 +86,12 @@ export default function AgentLoginScreen({ onLoginSuccess, onBack, onCreateAccou
             {/* White card — matches website container */}
             <View style={styles.container}>
 
-              {/* Logo — AXX in yellow, SPACE in dark */}
-              <View style={styles.logo}>
-                <Text style={styles.logoAccent}>AXX</Text>
-                <Text style={styles.logoWord}>SPACE</Text>
-              </View>
+              {/* Logo — real AXX logo image */}
+              <Image
+                source={require('../../../assets/axx-logo.jpg')}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
 
               <Text style={styles.title}>Agent Login</Text>
               <Text style={styles.subtitle}>Access your agent dashboard</Text>
@@ -205,21 +206,14 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
 
-  /* Logo */
-  logo: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+  /* Logo image */
+  logoImage: {
+    width: 88,
+    height: 88,
+    borderRadius: 20,
     marginBottom: 24,
-  },
-  logoAccent: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: C.logoAccent,
-  },
-  logoWord: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: C.logoWord,
+    alignSelf: 'center',
+    backgroundColor: '#fff',
   },
 
   title: {
