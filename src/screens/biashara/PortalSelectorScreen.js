@@ -3,19 +3,26 @@ import { Image,
   View, Text, TouchableOpacity, StyleSheet, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Path, Rect, Circle, Polyline, Line } from 'react-native-svg';
+import Svg, { Path, Rect, Polyline } from 'react-native-svg';
 import { useTheme } from '../../context/ThemeContext';
 import { Spacing, BorderRadius, FontSize } from '../../constants/theme';
 
-/* ── Inline icons ────────────────────────────────────────────────── */
-const KeyIcon = ({ color, size = 22 }) => (
+/* ── Portal icons — identical SVG paths to what each portal uses ─── */
+
+// Landlord portal: the building/property icon (matches BuildingIcon in biashara/Icons.js)
+const BuildingIcon = ({ color, size = 22 }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"
     stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <Circle cx="8" cy="15" r="5" />
-    <Path d="M14.5 9.5 21 3m-3 0 3 3-3.5 3.5-3-3" />
+    <Rect x="3" y="2" width="18" height="20" rx="1" />
+    <Path d="M9 22V12h6v10" />
+    <Rect x="6" y="6" width="3" height="3" />
+    <Rect x="15" y="6" width="3" height="3" />
+    <Rect x="6" y="11" width="3" height="3" />
+    <Rect x="15" y="11" width="3" height="3" />
   </Svg>
 );
 
+// Biashara portal: store icon (matches StoreIcon in biashara/Icons.js)
 const StoreIcon = ({ color, size = 22 }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"
     stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -25,6 +32,7 @@ const StoreIcon = ({ color, size = 22 }) => (
   </Svg>
 );
 
+// Accommodation portal: home icon (matches HomeIcon in AccomIcons.js & tab bar)
 const HomeIcon = ({ color, size = 22 }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"
     stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -33,7 +41,8 @@ const HomeIcon = ({ color, size = 22 }) => (
   </Svg>
 );
 
-const AgentIcon = ({ color, size = 22 }) => (
+// Agent portal: briefcase icon (matches BriefcaseIcon in AgentIcons.js)
+const BriefcaseIcon = ({ color, size = 22 }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"
     stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <Rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
@@ -54,7 +63,7 @@ const PORTALS = [
     title: 'Landlord Portal',
     subtitle: 'Manage properties & tenants',
     accent: '#e11d48',
-    Icon: KeyIcon,
+    Icon: BuildingIcon,
   },
   {
     key: 'biashara',
@@ -75,7 +84,7 @@ const PORTALS = [
     title: 'Agent Portal',
     subtitle: 'Manage listings & partnerships',
     accent: '#fbbf24',
-    Icon: AgentIcon,
+    Icon: BriefcaseIcon,
   },
 ];
 
@@ -153,7 +162,7 @@ export default function PortalSelectorScreen({ onSelectPortal }) {
           opacity: headerAnim,
           transform: [{ translateY: headerAnim.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }],
         }]}>
-          <Image source={require('../../../assets/axx-logo.jpg')} style={styles.logoImage} resizeMode="contain" />
+          <Image source={require('../../../assets/icon.png')} style={styles.logoImage} resizeMode="contain" />
           <Text style={[styles.brandName, { color: colors.text }]}>AXXSPACE</Text>
           <Text style={[styles.brandSub, { color: colors.textMuted }]}>Select your portal to continue</Text>
         </Animated.View>
