@@ -50,13 +50,13 @@ const LightColors = {
   isDark: false,
 };
 
-// Keep backward-compat export (defaults to dark)
-export const Colors = DarkColors;
+// Keep backward-compat export (defaults to light)
+export const Colors = LightColors;
 
 const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(false);
   const colors = isDark ? DarkColors : LightColors;
 
   const toggleTheme = () => setIsDark(prev => !prev);

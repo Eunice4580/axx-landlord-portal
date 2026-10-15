@@ -5,43 +5,28 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
-import { EyeIcon, EyeOffIcon } from './AgentIcons';
+import { EyeIcon, EyeOffIcon, ArrowLeftIcon, AlertIcon, CheckIcon } from './AgentIcons';
+import { useTheme } from '../../context/ThemeContext';
+import { Spacing, BorderRadius, FontSize } from '../../constants/theme';
 
-/* ── Exact colors from AgentLogin.jsx on the website ─────────────── */
-const C = {
-  bgGradientStart: '#fef9c3',
-  bgGradientEnd:   '#fde68a',
-  white:           '#ffffff',
-  logoAccent:      '#fbbf24',
-  logoWord:        '#1f2937',
-  title:           '#1f2937',
-  subtitle:        '#6b7280',
-  label:           '#374151',
-  inputBorder:     '#e5e7eb',
-  inputFocusBorder:'#fbbf24',
-  btnBg:           '#fbbf24',
-  btnText:         '#1f2937',
-  errorBg:         '#fee2e2',
-  errorText:       '#dc2626',
-  linkText:        '#fbbf24',
-  linkGray:        '#6b7280',
-};
-
+const ACCENT = '#fbbf24';  // amber — agent brand color
 const API_BASE = 'https://axx-spaces-backend-1.onrender.com/api';
 
 export default function AgentLoginScreen({ onLoginSuccess, onBack, onCreateAccount }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPw, setShowPw] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [emailFocused, setEmailFocused] = useState(false);
-  const [passFocused, setPassFocused]   = useState(false);
+  const { colors } = useTheme();
+  const [mode, setMode]             = useState('login'); // 'login' | 'forgot'
+  const [email, setEmail]           = useState('');
+  const [password, setPassword]     = useState('');
+  const [showPw, setShowPw]         = useState(false);
+  const [loading, setLoading]       = useState(false);
+  const [forgotEmail, setForgotEmail]     = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [msg, setMsg] = useState({ text: '', ok: false });
 
   const handleLogin = async () => {
-    setError('');
+    setMsg({ text: '', ok: false });
     if (!email.trim() || !password) {
-      setError('Please fill in all fields');
+      setMsg({ text: 'Please enter your email and password.', ok: false });
       return;
     }
     setLoading(true);
@@ -58,260 +43,203 @@ export default function AgentLoginScreen({ onLoginSuccess, onBack, onCreateAccou
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || data.message || 'Login failed');
       if (data.user?.role !== 'agent') {
-        throw new Error('This login is for agents only. Please use the appropriate login page.');
+        throw new Error('This login is for agents only. Please use the appropriate portal.');
       }
       await SecureStore.setItemAsync('agent_token', data.token);
       onLoginSuccess(data.user);
     } catch (err) {
-      setError(err.name === 'AbortError'
-        ? 'Request timed out. The server may be waking up — please try again.'
-        : err.message || 'Login failed. Please try again.');
+      setMsg({
+        text: err.name === 'AbortError'
+          ? 'Request timed out. The server may be waking up — please try again.'
+          : err.message || 'Login failed. Please try again.',
+        ok: false,
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    /* Yellow gradient background — exact match to website */
-    <View style={styles.root}>
-      <SafeAreaView style={{ flex: 1 }}>
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <ScrollView
-            contentContainerStyle={styles.scroll}
-            keyboardShouldPersistTaps="handled"
-          >
-            {/* White card — matches website container */}
-            <View style={styles.container}>
+  const handleForgot = async () => {
+    if (!forgotEmail.trim()) { setMsg({ text: 'Enter your email address.', ok: false }); return; }
+    setForgotLoading(true);
+    setMsg({ text: '', ok: false });
+    try {
+      const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail.trim(), role: 'agent' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send reset email.');
+      setMsg({ text: 'Reset link sent. Check your inbox.', ok: true });
+    } catch (err) {
+      setMsg({ text: err.message || 'Failed to send reset email.', ok: false });
+    } finally {
+      setForgotLoading(false);
+    }
+  };
 
-              {/* Logo — real AXX logo image */}
-              <Image
-                source={require('../../../assets/axx-logo.jpg')}
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
+  const s = getStyles(colors);
 
-              <Text style={styles.title}>Agent Login</Text>
-              <Text style={styles.subtitle}>Access your agent dashboard</Text>
-
-              {/* Error banner */}
-              {!!error && (
-                <View style={styles.errorBox}>
-                  <Text style={styles.errorText}>{error}</Text>
-                </View>
-              )}
-
-              {/* Email field */}
-              <View style={styles.field}>
-                <Text style={styles.label}>Email</Text>
-                <TextInput
-                  style={[styles.input, emailFocused && styles.inputFocused]}
-                  placeholder="your@email.com"
-                  placeholderTextColor="#9ca3af"
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  value={email}
-                  onChangeText={setEmail}
-                  onFocus={() => setEmailFocused(true)}
-                  onBlur={() => setEmailFocused(false)}
-                  editable={!loading}
-                />
-              </View>
-
-              {/* Password field */}
-              <View style={styles.field}>
-                <Text style={styles.label}>Password</Text>
-                <View style={styles.pwWrap}>
-                  <TextInput
-                    style={[styles.input, styles.pwInput, passFocused && styles.inputFocused]}
-                    placeholder="••••••••"
-                    placeholderTextColor="#9ca3af"
-                    secureTextEntry={!showPw}
-                    value={password}
-                    onChangeText={setPassword}
-                    onFocus={() => setPassFocused(true)}
-                    onBlur={() => setPassFocused(false)}
-                    editable={!loading}
-                  />
-                  <TouchableOpacity
-                    style={styles.eyeBtn}
-                    onPress={() => setShowPw(v => !v)}
-                    activeOpacity={0.7}
-                  >
-                    {showPw
-                      ? <EyeOffIcon color="#9ca3af" size={18} />
-                      : <EyeIcon color="#9ca3af" size={18} />}
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* Login button */}
-              <TouchableOpacity
-                style={[styles.button, loading && styles.buttonDisabled]}
-                onPress={handleLogin}
-                disabled={loading}
-                activeOpacity={0.8}
-              >
-                {loading
-                  ? <ActivityIndicator color={C.btnText} />
-                  : <Text style={styles.buttonText}>Log In</Text>
-                }
-              </TouchableOpacity>
-
-              {/* Back link */}
-              <View style={styles.link}>
-                <TouchableOpacity onPress={onBack}>
-                  <Text style={styles.linkText}>← Back to Portal Selector</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Create account */}
-              <View style={styles.link}>
-                <Text style={styles.linkGray}>Don't have an account? </Text>
-                <TouchableOpacity onPress={onCreateAccount}>
-                  <Text style={styles.linkText}>Create Account</Text>
-                </TouchableOpacity>
-              </View>
+  // ── Forgot Password view ──
+  if (mode === 'forgot') {
+    return (
+      <SafeAreaView style={s.safe}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+          <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+            <TouchableOpacity style={s.backBtn} onPress={() => { setMode('login'); setMsg({ text: '', ok: false }); }}>
+              <ArrowLeftIcon color={ACCENT} size={16} />
+              <Text style={s.backText}>  Back to Sign In</Text>
+            </TouchableOpacity>
+            <View style={s.brand}>
+              <Image source={require('../../../assets/axx-logo.jpg')} style={s.logoImage} resizeMode="contain" />
+              <Text style={[s.brandName, { color: colors.text }]}>Reset Password</Text>
+              <Text style={s.tagline}>Enter your email for a reset link</Text>
             </View>
+            {msg.text ? (
+              <View style={[s.msgBox, msg.ok ? s.msgOk : s.msgErr]}>
+                {msg.ok ? <CheckIcon color="#22c55e" size={14} /> : <AlertIcon color="#ef4444" size={14} />}
+                <Text style={s.msgText}> {msg.text}</Text>
+              </View>
+            ) : null}
+            <Text style={s.label}>Email Address</Text>
+            <TextInput style={s.input} placeholder="you@example.com" placeholderTextColor={colors.textMuted}
+              value={forgotEmail} onChangeText={setForgotEmail} autoCapitalize="none" keyboardType="email-address" />
+            <TouchableOpacity style={[s.btn, forgotLoading && s.btnDisabled]} onPress={handleForgot} disabled={forgotLoading}>
+              {forgotLoading ? <ActivityIndicator color="#1f2937" size="small" /> : <Text style={s.btnText}>Send Reset Link</Text>}
+            </TouchableOpacity>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </View>
+    );
+  }
+
+  // ── Login view ──
+  return (
+    <SafeAreaView style={s.safe}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+
+          {/* Back */}
+          <TouchableOpacity style={s.backBtn} onPress={onBack}>
+            <ArrowLeftIcon color={ACCENT} size={16} />
+            <Text style={s.backText}>  All Portals</Text>
+          </TouchableOpacity>
+
+          {/* Brand */}
+          <View style={s.brand}>
+            <Image source={require('../../../assets/axx-logo.jpg')} style={s.logoImage} resizeMode="contain" />
+            <Text style={[s.brandName, { color: colors.text }]}>Agent Portal</Text>
+            <Text style={s.tagline}>Property Sales & Lettings</Text>
+            <View style={[s.pill, { backgroundColor: ACCENT + '18', borderColor: ACCENT + '35' }]}>
+              <Text style={[s.pillText, { color: ACCENT }]}>Access your agent dashboard</Text>
+            </View>
+          </View>
+
+          {/* Inline message */}
+          {msg.text ? (
+            <View style={[s.msgBox, msg.ok ? s.msgOk : s.msgErr]}>
+              {msg.ok ? <CheckIcon color="#22c55e" size={14} /> : <AlertIcon color="#ef4444" size={14} />}
+              <Text style={s.msgText}> {msg.text}</Text>
+            </View>
+          ) : null}
+
+          {/* Email */}
+          <Text style={s.label}>Email Address</Text>
+          <TextInput
+            style={s.input}
+            placeholder="your@email.com"
+            placeholderTextColor={colors.textMuted}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+            editable={!loading}
+          />
+
+          {/* Password */}
+          <Text style={s.label}>Password</Text>
+          <View style={s.pwRow}>
+            <TextInput
+              style={[s.input, s.pwInput]}
+              placeholder="Enter your password"
+              placeholderTextColor={colors.textMuted}
+              secureTextEntry={!showPw}
+              value={password}
+              onChangeText={setPassword}
+              editable={!loading}
+            />
+            <TouchableOpacity style={s.pwToggle} onPress={() => setShowPw(v => !v)}>
+              {showPw ? <EyeOffIcon color={ACCENT} size={17} /> : <EyeIcon color={ACCENT} size={17} />}
+            </TouchableOpacity>
+          </View>
+
+          {/* Forgot */}
+          <TouchableOpacity style={s.forgotLink} onPress={() => { setMode('forgot'); setMsg({ text: '', ok: false }); }}>
+            <Text style={[s.forgotText, { color: ACCENT }]}>Forgot password?</Text>
+          </TouchableOpacity>
+
+          {/* Login button */}
+          <TouchableOpacity style={[s.btn, loading && s.btnDisabled]} onPress={handleLogin} disabled={loading} activeOpacity={0.85}>
+            {loading ? <ActivityIndicator color="#1f2937" size="small" /> : <Text style={s.btnText}>Sign In</Text>}
+          </TouchableOpacity>
+
+          {/* Create account */}
+          {onCreateAccount && (
+            <TouchableOpacity
+              style={[s.note, { borderColor: ACCENT + '50', backgroundColor: ACCENT + '11' }]}
+              onPress={onCreateAccount}
+              activeOpacity={0.8}
+            >
+              <Text style={[s.noteText, { color: colors.textMuted }]}>
+                Don't have an account?{'\n'}
+                <Text style={{ color: ACCENT, fontWeight: '800' }}>Create Account →</Text>
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          <Text style={[s.footer, { color: colors.textMuted }]}>AxxSpaces — Agent Portal</Text>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  /* Yellow gradient — matches website: linear-gradient(135deg, #fef9c3 0%, #fde68a 100%) */
-  root: {
-    flex: 1,
-    backgroundColor: C.bgGradientEnd,
-  },
-  scroll: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
+const getStyles = (colors) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
+  scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: Spacing.four, paddingBottom: Spacing.four },
 
-  /* White rounded card — matches website container */
-  container: {
-    backgroundColor: C.white,
-    borderRadius: 20,
-    padding: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 40,
-    elevation: 8,
-  },
+  backBtn: { flexDirection: 'row', alignItems: 'center', marginTop: Spacing.three, marginBottom: Spacing.two },
+  backText: { fontSize: FontSize.sm, fontWeight: '700', color: ACCENT },
 
-  /* Logo image */
-  logoImage: {
-    width: 88,
-    height: 88,
-    borderRadius: 20,
-    marginBottom: 24,
-    alignSelf: 'center',
-    backgroundColor: '#fff',
-  },
+  brand: { alignItems: 'center', marginBottom: Spacing.four },
+  logoImage: { width: 88, height: 88, borderRadius: 20, marginBottom: Spacing.two, backgroundColor: '#fff',
+    shadowColor: ACCENT, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 8 },
+  brandName: { fontSize: 30, fontWeight: '900', letterSpacing: -0.5 },
+  tagline: { fontSize: FontSize.sm, color: '#94a3b8', marginTop: 4, fontWeight: '600', letterSpacing: 0.3 },
+  pill: { marginTop: 10, borderWidth: 1, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5 },
+  pillText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.3 },
 
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: C.title,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: C.subtitle,
-    textAlign: 'center',
-    marginBottom: 32,
-  },
+  msgBox: { flexDirection: 'row', alignItems: 'center', borderRadius: BorderRadius.md, padding: Spacing.two, marginBottom: Spacing.two, borderWidth: 1 },
+  msgOk: { backgroundColor: 'rgba(34,197,94,0.12)', borderColor: 'rgba(34,197,94,0.3)' },
+  msgErr: { backgroundColor: 'rgba(239,68,68,0.12)', borderColor: 'rgba(239,68,68,0.3)' },
+  msgText: { fontSize: FontSize.sm, color: colors.text, flex: 1 },
 
-  /* Error */
-  errorBox: {
-    backgroundColor: C.errorBg,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-  },
-  errorText: {
-    color: C.errorText,
-    fontSize: 13,
-  },
+  label: { fontSize: 11, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6, marginTop: Spacing.two },
+  input: { backgroundColor: colors.backgroundElement, borderWidth: 1, borderColor: colors.border, borderRadius: BorderRadius.md, padding: Spacing.three, fontSize: FontSize.md, color: colors.text },
+  pwRow: { position: 'relative', justifyContent: 'center' },
+  pwInput: { paddingRight: 48 },
+  pwToggle: { position: 'absolute', right: 14 },
 
-  /* Form fields */
-  field: { marginBottom: 20 },
-  label: {
-    display: 'flex',
-    fontSize: 13,
-    fontWeight: '700',
-    color: C.label,
-    marginBottom: 6,
-  },
-  input: {
-    width: '100%',
-    padding: 12,
-    borderWidth: 2,
-    borderColor: C.inputBorder,
-    borderRadius: 10,
-    fontSize: 14,
-    color: '#1f2937',
-    backgroundColor: C.white,
-  },
-  inputFocused: {
-    borderColor: C.inputFocusBorder,
-  },
+  forgotLink: { alignItems: 'flex-end', marginTop: 8, marginBottom: Spacing.two },
+  forgotText: { fontSize: 13, fontWeight: '700' },
 
-  /* Password wrapper with eye toggle */
-  pwWrap: {
-    position: 'relative',
-  },
-  pwInput: {
-    paddingRight: 48,
-  },
-  eyeBtn: {
-    position: 'absolute',
-    right: 14,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 4,
-  },
+  btn: { backgroundColor: ACCENT, borderRadius: BorderRadius.md, padding: Spacing.three, alignItems: 'center', marginTop: Spacing.two,
+    shadowColor: ACCENT, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6 },
+  btnDisabled: { opacity: 0.6 },
+  btnText: { color: '#1f2937', fontSize: FontSize.md, fontWeight: '800', letterSpacing: 0.3 },
 
-
-  /* Button */
-  button: {
-    backgroundColor: C.btnBg,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: {
-    color: C.btnText,
-    fontSize: 16,
-    fontWeight: '800',
-  },
-
-  /* Links */
-  link: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  linkText: {
-    color: C.linkText,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  linkGray: {
-    color: C.linkGray,
-    fontSize: 13,
-  },
+  note: { marginTop: Spacing.four, borderWidth: 1, borderRadius: BorderRadius.md, padding: Spacing.three, alignItems: 'center' },
+  noteText: { fontSize: FontSize.sm, textAlign: 'center', lineHeight: 20 },
+  footer: { textAlign: 'center', fontSize: 11, marginTop: Spacing.four, letterSpacing: 0.5 },
 });

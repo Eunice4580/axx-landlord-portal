@@ -1,54 +1,11 @@
 import React, { useRef, useEffect } from 'react';
-import { Image,
-  View, Text, TouchableOpacity, StyleSheet, Animated,
+import {
+  Image, View, Text, TouchableOpacity, StyleSheet, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Path, Rect, Polyline } from 'react-native-svg';
+import Svg, { Polyline } from 'react-native-svg';
 import { useTheme } from '../../context/ThemeContext';
-import { Spacing, BorderRadius, FontSize } from '../../constants/theme';
-
-/* ── Portal icons — identical SVG paths to what each portal uses ─── */
-
-// Landlord portal: the building/property icon (matches BuildingIcon in biashara/Icons.js)
-const BuildingIcon = ({ color, size = 22 }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-    stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <Rect x="3" y="2" width="18" height="20" rx="1" />
-    <Path d="M9 22V12h6v10" />
-    <Rect x="6" y="6" width="3" height="3" />
-    <Rect x="15" y="6" width="3" height="3" />
-    <Rect x="6" y="11" width="3" height="3" />
-    <Rect x="15" y="11" width="3" height="3" />
-  </Svg>
-);
-
-// Biashara portal: store icon (matches StoreIcon in biashara/Icons.js)
-const StoreIcon = ({ color, size = 22 }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-    stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <Path d="M2 3h20l-2 7H4L2 3z" />
-    <Path d="M4 10v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V10" />
-    <Path d="M9 21V13h6v8" />
-  </Svg>
-);
-
-// Accommodation portal: home icon (matches HomeIcon in AccomIcons.js & tab bar)
-const HomeIcon = ({ color, size = 22 }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-    stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <Path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-    <Polyline points="9 22 9 12 15 12 15 22" />
-  </Svg>
-);
-
-// Agent portal: briefcase icon (matches BriefcaseIcon in AgentIcons.js)
-const BriefcaseIcon = ({ color, size = 22 }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-    stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <Rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-    <Path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-  </Svg>
-);
+import { FontSize } from '../../constants/theme';
 
 const ChevronRight = ({ color, size = 18 }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -57,42 +14,46 @@ const ChevronRight = ({ color, size = 18 }) => (
   </Svg>
 );
 
+const AXX_LOGO         = require('../../../assets/axx-logo.jpg');
+const MARKETPLACE_LOGO = require('../../../assets/marketplace-logo.png');
+
 const PORTALS = [
   {
     key: 'landlord',
     title: 'Landlord Portal',
     subtitle: 'Manage properties & tenants',
     accent: '#e11d48',
-    Icon: BuildingIcon,
+    logo: AXX_LOGO,
   },
   {
     key: 'biashara',
     title: 'AxxBiashara',
     subtitle: 'Manage your business directory',
     accent: '#fbbf24',
-    Icon: StoreIcon,
+    logo: MARKETPLACE_LOGO,
+    whiteBadge: true,
   },
   {
     key: 'accommodation',
     title: 'Accommodation',
     subtitle: 'Manage properties & bookings',
     accent: '#10b981',
-    Icon: HomeIcon,
+    logo: AXX_LOGO,
   },
   {
     key: 'agent',
     title: 'Agent Portal',
     subtitle: 'Manage listings & partnerships',
     accent: '#fbbf24',
-    Icon: BriefcaseIcon,
+    logo: AXX_LOGO,
   },
 ];
 
 function PortalCard({ portal, onPress, delay }) {
   const { colors } = useTheme();
-  const anim = useRef(new Animated.Value(0)).current;
+  const anim  = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
-  const { title, subtitle, accent, Icon } = portal;
+  const { title, subtitle, accent, logo, whiteBadge } = portal;
 
   useEffect(() => {
     Animated.spring(anim, {
@@ -101,43 +62,40 @@ function PortalCard({ portal, onPress, delay }) {
     }).start();
   }, []);
 
-  const handlePressIn = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true }).start();
-  const handlePressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
+  const handlePressIn  = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true }).start();
+  const handlePressOut = () => Animated.spring(scale, { toValue: 1,    useNativeDriver: true }).start();
 
   return (
     <Animated.View style={{
       opacity: anim,
       transform: [
-        { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) },
+        { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) },
         { scale },
       ],
     }}>
-      <TouchableOpacity
-        activeOpacity={1}
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-      >
+      <TouchableOpacity activeOpacity={1} onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut}>
         <View style={[styles.card, {
           backgroundColor: colors.backgroundElement,
           borderColor: accent + '40',
           shadowColor: accent,
         }]}>
-          {/* Left accent stripe */}
           <View style={[styles.stripe, { backgroundColor: accent }]} />
 
-          {/* Icon circle */}
           <View style={[styles.iconCircle, { backgroundColor: accent + '18' }]}>
-            <Icon color={accent} size={22} />
+            {whiteBadge ? (
+              <View style={styles.whiteBadge}>
+                <Image source={logo} style={styles.badgeImg} resizeMode="cover" />
+              </View>
+            ) : (
+              <Image source={logo} style={styles.cardLogo} resizeMode="contain" />
+            )}
           </View>
 
-          {/* Text */}
           <View style={styles.cardText}>
             <Text style={[styles.cardTitle, { color: colors.text }]}>{title}</Text>
             <Text style={[styles.cardSub, { color: colors.textMuted }]}>{subtitle}</Text>
           </View>
 
-          {/* Arrow */}
           <ChevronRight color={accent} size={18} />
         </View>
       </TouchableOpacity>
@@ -147,40 +105,63 @@ function PortalCard({ portal, onPress, delay }) {
 
 export default function PortalSelectorScreen({ onSelectPortal }) {
   const { colors } = useTheme();
-  const headerAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim  = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(-16)).current;
 
   useEffect(() => {
-    Animated.timing(headerAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+    Animated.parallel([
+      Animated.timing(fadeAnim,  { toValue: 1, duration: 700, useNativeDriver: true }),
+      Animated.spring(slideAnim, { toValue: 0, tension: 60, friction: 10, useNativeDriver: true }),
+    ]).start();
   }, []);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
       <View style={styles.container}>
 
-        {/* Header */}
-        <Animated.View style={[styles.header, {
-          opacity: headerAnim,
-          transform: [{ translateY: headerAnim.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }],
-        }]}>
-          <Image source={require('../../../assets/icon.png')} style={styles.logoImage} resizeMode="contain" />
-          <Text style={[styles.brandName, { color: colors.text }]}>AXXSPACE</Text>
-          <Text style={[styles.brandSub, { color: colors.textMuted }]}>Select your portal to continue</Text>
+        {/* ── Hero Header ── */}
+        <Animated.View style={[styles.header, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+          {/* Logo with glow ring */}
+          <View style={styles.logoRing}>
+            <Image
+              source={require('../../../assets/icon.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+          </View>
+
+          {/* Styled brand name — AXX in red, SPACE in navy */}
+          <View style={styles.brandRow}>
+            <Text style={styles.brandAxx}>AXX</Text>
+            <Text style={styles.brandSpace}>SPACE</Text>
+          </View>
+
+          {/* Coloured accent dots */}
+          <View style={styles.dotsRow}>
+            <View style={[styles.dot, { backgroundColor: '#e11d48' }]} />
+            <View style={[styles.dot, { backgroundColor: '#fbbf24' }]} />
+            <View style={[styles.dot, { backgroundColor: '#1e3a5f' }]} />
+          </View>
+
+          <Text style={[styles.brandSub, { color: colors.textMuted }]}>
+            Property · Business · Accommodation · Agents
+          </Text>
         </Animated.View>
 
-        {/* Portal cards */}
+        {/* ── Portal cards ── */}
         <View style={styles.cards}>
           {PORTALS.map((portal, i) => (
             <PortalCard
               key={portal.key}
               portal={portal}
-              delay={100 + i * 120}
+              delay={80 + i * 100}
               onPress={() => onSelectPortal(portal.key)}
             />
           ))}
         </View>
 
-        {/* Footer */}
-        <Animated.Text style={[styles.footer, { color: colors.textMuted, opacity: headerAnim }]}>
+        {/* ── Footer ── */}
+        <Animated.Text style={[styles.footer, { color: colors.textMuted, opacity: fadeAnim }]}>
           AXX Spaces Manager
         </Animated.Text>
 
@@ -193,24 +174,75 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   container: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.three,
-    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
-  header: { alignItems: 'center', paddingTop: Spacing.four, paddingBottom: Spacing.two },
-  logoMark: {
-    width: 72, height: 72, borderRadius: 20,
-    justifyContent: 'center', alignItems: 'center',
-    marginBottom: Spacing.two,
-    shadowColor: '#e11d48', shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.4, shadowRadius: 20, elevation: 10,
-  },
-  logoText: { color: '#fff', fontSize: 22, fontWeight: '900', letterSpacing: 3 },
-  logoImage: { width: 80, height: 80, borderRadius: 20, marginBottom: Spacing.two, backgroundColor: '#fff' },
-  brandName: { fontSize: 26, fontWeight: '900', letterSpacing: 4, marginBottom: 6 },
-  brandSub: { fontSize: FontSize.sm, fontWeight: '500', letterSpacing: 0.3 },
 
+  /* ── Header ── */
+  header: {
+    alignItems: 'center',
+    paddingTop: 16,
+    paddingBottom: 20,
+  },
+
+  /* Glowing ring around logo */
+  logoRing: {
+    width: 104, height: 104,
+    borderRadius: 28,
+    padding: 4,
+    borderWidth: 2,
+    borderColor: '#e11d4830',
+    backgroundColor: '#fff',
+    shadowColor: '#e11d48',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+    marginBottom: 16,
+  },
+  logoImage: {
+    width: '100%', height: '100%',
+    borderRadius: 24,
+  },
+
+  /* AXX SPACE styled */
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 8,
+  },
+  brandAxx: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: '#e11d48',
+    letterSpacing: 3,
+  },
+  brandSpace: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: '#1e3a5f',
+    letterSpacing: 3,
+  },
+
+  /* Three brand color dots */
+  dotsRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 10,
+  },
+  dot: {
+    width: 6, height: 6, borderRadius: 3,
+  },
+
+  brandSub: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.8,
+    textAlign: 'center',
+  },
+
+  /* ── Cards ── */
   cards: { flex: 1, justifyContent: 'center', gap: 12 },
 
   card: {
@@ -218,18 +250,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1.5,
     borderRadius: 20,
-    paddingVertical: 18,
+    paddingVertical: 16,
     paddingRight: 18,
     paddingLeft: 0,
     overflow: 'hidden',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 14,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 4,
   },
   stripe: {
-    width: 5,
-    alignSelf: 'stretch',
+    width: 5, alignSelf: 'stretch',
     borderTopLeftRadius: 20,
     borderBottomLeftRadius: 20,
     marginRight: 14,
@@ -237,11 +268,22 @@ const styles = StyleSheet.create({
   iconCircle: {
     width: 48, height: 48, borderRadius: 14,
     justifyContent: 'center', alignItems: 'center',
-    marginRight: 14,
+    marginRight: 14, overflow: 'hidden',
   },
-  cardText: { flex: 1 },
-  cardTitle: { fontSize: FontSize.md, fontWeight: '800', letterSpacing: -0.2, marginBottom: 3 },
-  cardSub: { fontSize: FontSize.sm, fontWeight: '500' },
+  cardLogo:  { width: 40, height: 40, borderRadius: 10 },
+  whiteBadge: {
+    width: 40, height: 40, borderRadius: 10,
+    backgroundColor: '#fff', overflow: 'hidden',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  badgeImg: { width: 40, height: 40 },
 
-  footer: { textAlign: 'center', fontSize: 11, letterSpacing: 0.5, paddingBottom: Spacing.two },
+  cardText:  { flex: 1 },
+  cardTitle: { fontSize: FontSize.md, fontWeight: '800', letterSpacing: -0.2, marginBottom: 3 },
+  cardSub:   { fontSize: FontSize.sm, fontWeight: '500' },
+
+  footer: {
+    textAlign: 'center', fontSize: 11,
+    letterSpacing: 0.5, paddingTop: 12,
+  },
 });

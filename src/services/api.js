@@ -5,6 +5,10 @@ export const API_URL = CONFIG.API_URL;
 
 export const apiCall = async (endpoint, options = {}) => {
   const { useAuth = true, ...fetchOptions } = options;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 35000); // 35s timeout
+
   const headers = {
     'Content-Type': 'application/json',
     ...fetchOptions.headers,
@@ -21,20 +25,27 @@ export const apiCall = async (endpoint, options = {}) => {
     }
   }
 
-  const config = {
-    ...fetchOptions,
-    headers,
-  };
-
   try {
-    const response = await fetch(`${API_URL}${endpoint}`, config);
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      ...fetchOptions,
+      headers,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.error || data.message || 'API request failed');
     }
     return data;
   } catch (error) {
-    console.error('API call error:', error);
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timed out. The server may be waking up — please try again in a moment.');
+    }
+    if (error.message === 'Network request failed') {
+      throw new Error('No internet connection. Please check your network and try again.');
+    }
+    console.error('API call error:', error.message);
     throw error;
   }
 };
@@ -81,10 +92,10 @@ export const userAPI = {
 };
 
 export const caretakerAPI = {
-  inviteCaretaker: (name, email, phone, propertyIds) =>
+  inviteCaretaker: (name, email, phone, password, propertyIds, notes) =>
     apiCall('/caretaker/invite', {
       method: 'POST',
-      body: JSON.stringify({ name, email, phone, propertyIds }),
+      body: JSON.stringify({ name, email, phone, password, propertyIds, notes }),
     }),
   getMyCaretakers: () => apiCall('/caretaker/my-caretakers'),
   getMyAssignedProperties: () => apiCall('/caretaker/my-properties'),

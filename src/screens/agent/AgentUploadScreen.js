@@ -159,9 +159,11 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
 
   const [form, setForm] = useState({
     title: '', propertyType: '', county: '', location: '',
-    totalUnits: '1', description: '', price: '', deposit: '',
+    totalUnits: '1', lat: '', lng: '',
+    description: '', price: '', deposit: '',
     bedrooms: '', bathrooms: '', bookedUnits: '0',
     leaseType: 'monthly', furnished: false,
+    availableFrom: '', rules: '',
     amenities: [],
   });
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
@@ -248,10 +250,14 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
       fd.append('price',        form.price);
       fd.append('leaseType',    form.leaseType);
       fd.append('furnished',    form.furnished ? 'true' : 'false');
-      if (form.deposit)     fd.append('deposit',     form.deposit);
-      if (form.bedrooms)    fd.append('bedrooms',    form.bedrooms);
-      if (form.bathrooms)   fd.append('bathrooms',   form.bathrooms);
-      if (form.bookedUnits) fd.append('bookedUnits', form.bookedUnits);
+      if (form.deposit)       fd.append('deposit',       form.deposit);
+      if (form.bedrooms)      fd.append('bedrooms',      form.bedrooms);
+      if (form.bathrooms)     fd.append('bathrooms',     form.bathrooms);
+      if (form.bookedUnits)   fd.append('bookedUnits',   form.bookedUnits);
+      if (form.lat)           fd.append('lat',           form.lat);
+      if (form.lng)           fd.append('lng',           form.lng);
+      if (form.availableFrom) fd.append('availableFrom', form.availableFrom);
+      if (form.rules)         fd.append('rules',         form.rules.trim());
 
       // Amenities — send as JSON string (backend can parse)
       fd.append('amenities', JSON.stringify(form.amenities));
@@ -326,7 +332,13 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
           onBlur={() => setFocused(f => ({ ...f, propertyType: false }))}
         />
 
-        <LocateButton counties={KENYA_COUNTIES} onFound={p => { if (p.county) set('county', p.county); const area = [p.town, p.county].filter(Boolean).join(', '); if (area && !String(form.location || '').trim()) set('location', area); }} />
+        <LocateButton counties={KENYA_COUNTIES} onFound={p => {
+          if (p.lat)    set('lat',    p.lat.toFixed(6));
+          if (p.lng)    set('lng',    p.lng.toFixed(6));
+          if (p.county) set('county', p.county);
+          const area = [p.town, p.county].filter(Boolean).join(', ');
+          if (area && !String(form.location || '').trim()) set('location', area);
+        }} />
 
         <Picker
           label="County *"
@@ -448,12 +460,41 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
         <Picker
           label="Lease Type"
           value={form.leaseType}
-          options={['monthly','yearly','daily','short-term']}
+          options={['monthly', '6months', 'yearly']}
           onSelect={v => set('leaseType', v)}
           focused={focused.leaseType}
           onFocus={() => setFocused(f => ({ ...f, leaseType: true }))}
           onBlur={() => setFocused(f => ({ ...f, leaseType: false }))}
         />
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Available From</Text>
+          <TextInput
+            style={[styles.input, focused.availableFrom && styles.inputFocused]}
+            placeholder="YYYY-MM-DD"
+            placeholderTextColor={C.hint}
+            value={form.availableFrom}
+            onChangeText={v => set('availableFrom', v)}
+            onFocus={() => setFocused(f => ({ ...f, availableFrom: true }))}
+            onBlur={() => setFocused(f => ({ ...f, availableFrom: false }))}
+          />
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>House Rules</Text>
+          <TextInput
+            style={[styles.input, styles.textarea, focused.rules && styles.inputFocused]}
+            placeholder="e.g. No pets, no smoking inside..."
+            placeholderTextColor={C.hint}
+            multiline
+            numberOfLines={3}
+            textAlignVertical="top"
+            value={form.rules}
+            onChangeText={v => set('rules', v)}
+            onFocus={() => setFocused(f => ({ ...f, rules: true }))}
+            onBlur={() => setFocused(f => ({ ...f, rules: false }))}
+          />
+        </View>
 
         {/* Furnished toggle */}
         <View style={[styles.field, { flexDirection: 'row', alignItems: 'center', gap: 12 }]}>

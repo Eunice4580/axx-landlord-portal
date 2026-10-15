@@ -74,7 +74,7 @@ export default function BiasharaLoginScreen({ onLoginSuccess, onBack, onCreateAc
               <Text style={[s.backText, { color: ACCENT }]}>  Back to Sign In</Text>
             </TouchableOpacity>
             <View style={s.brandBlock}>
-              <Image source={require('../../../assets/marketplace-logo.png')} style={styles2.marketplaceLogo} resizeMode="contain" />
+            <Image source={require('../../../assets/marketplace-logo.png')} style={s.logoImage} resizeMode="contain" />
               <Text style={[s.brandName, { color: colors.text }]}>Reset Password</Text>
               <Text style={s.tagline}>Enter your email for a reset link</Text>
             </View>
@@ -110,7 +110,7 @@ export default function BiasharaLoginScreen({ onLoginSuccess, onBack, onCreateAc
           </TouchableOpacity>
 
           <View style={s.brandBlock}>
-            <Image source={require('../../../assets/marketplace-logo.png')} style={styles2.marketplaceLogo} resizeMode="contain" />
+            <Image source={require('../../../assets/marketplace-logo.png')} style={s.logoImage} resizeMode="contain" />
             <Text style={[s.brandName, { color: colors.text }]}>AxxBiashara</Text>
             <Text style={s.tagline}>Business Owner Portal</Text>
             <View style={[s.taglinePill, { backgroundColor: ACCENT + '18', borderColor: ACCENT + '30' }]}>
@@ -174,7 +174,11 @@ const getStyles = (colors) => StyleSheet.create({
   backBtn: { flexDirection: 'row', alignItems: 'center', marginTop: Spacing.three, marginBottom: Spacing.two },
   backText: { fontSize: FontSize.sm, fontWeight: '700' },
   brandBlock: { alignItems: 'center', marginBottom: Spacing.four },
-  logoMark: { width: 72, height: 72, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.two, shadowColor: ACCENT, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.4, shadowRadius: 20, elevation: 10 },
+  logoImage: {
+    width: 88, height: 88, borderRadius: 20, marginBottom: Spacing.two, backgroundColor: '#fff',
+    shadowColor: ACCENT, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 8,
+    borderWidth: 1, borderColor: ACCENT + '25',
+  },
   brandName: { fontSize: 30, fontWeight: '900', letterSpacing: -0.5 },
   tagline: { fontSize: FontSize.sm, color: '#94a3b8', marginTop: 4, fontWeight: '600', letterSpacing: 0.3 },
   taglinePill: { marginTop: 10, borderWidth: 1, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5 },
@@ -193,18 +197,8 @@ const getStyles = (colors) => StyleSheet.create({
   msgBox: { flexDirection: 'row', alignItems: 'center', borderRadius: BorderRadius.md, padding: Spacing.two, marginBottom: Spacing.two, borderWidth: 1 },
   msgSuccess: { backgroundColor: 'rgba(34,197,94,0.12)', borderColor: 'rgba(34,197,94,0.3)' },
   msgError: { backgroundColor: 'rgba(239,68,68,0.12)', borderColor: 'rgba(239,68,68,0.3)' },
-  msgText: { fontSize: FontSize.sm, color: '#f1f5f9', flex: 1 },
+  msgText: { fontSize: FontSize.sm, color: colors.text, flex: 1 },
   registerNote: { marginTop: Spacing.four, borderWidth: 1, borderRadius: BorderRadius.md, padding: Spacing.three, alignItems: 'center' },
   registerNoteText: { fontSize: FontSize.sm, textAlign: 'center', lineHeight: 20 },
   footer: { textAlign: 'center', fontSize: FontSize.xs, marginTop: Spacing.four },
-});
-
-const styles2 = StyleSheet.create({
-  marketplaceLogo: {
-    width: 90,
-    height: 90,
-    borderRadius: 20,
-    marginBottom: Spacing.two,
-    backgroundColor: '#fff',
-  },
 });

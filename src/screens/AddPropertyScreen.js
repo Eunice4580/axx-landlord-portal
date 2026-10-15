@@ -9,27 +9,111 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import LocateButton from '../components/LocateButton';
 import { createPropertyWithImages } from '../services/api';
 import { Spacing, BorderRadius, FontSize } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
 import { AMENITIES_LIST, PROPERTY_TYPES } from '../constants/propertyOptions';
 
+const COUNTIES = [
+  'Mombasa', 'Kwale', 'Kilifi', 'Tana River', 'Lamu', 'Taita Taveta',
+  'Garissa', 'Wajir', 'Mandera', 'Marsabit', 'Isiolo', 'Meru', 'Tharaka Nithi',
+  'Embu', 'Kitui', 'Machakos', 'Makueni', 'Nyandarua', 'Nyeri', 'Kirinyaga',
+  "Murang'a", 'Kiambu', 'Turkana', 'West Pokot', 'Samburu', 'Trans Nzoia',
+  'Uasin Gishu', 'Elgeyo Marakwet', 'Nandi', 'Baringo', 'Laikipia', 'Nakuru',
+  'Narok', 'Kajiado', 'Kericho', 'Bomet', 'Kakamega', 'Vihiga', 'Bungoma',
+  'Busia', 'Siaya', 'Kisumu', 'Homa Bay', 'Migori', 'Kisii', 'Nyamira', 'Nairobi City',
+];
+
+const LEASE_TYPES = ['monthly', '6months', 'yearly'];
+const LEASE_LABELS = { monthly: 'Monthly', '6months': '6 Months', yearly: 'Yearly' };
+
+/* ── Dropdown Picker component ─────────────────────────────── */
+function Picker({ label, value, options, optionLabels, onSelect, required, colors }) {
+  const [open, setOpen] = useState(false);
+  const display = optionLabels ? optionLabels[value] : value;
+  return (
+    <View style={{ marginBottom: Spacing.two }}>
+      <Text style={[pickerStyles.label, { color: colors.textSecondary }]}>
+        {label}{required && <Text style={{ color: colors.primary }}> *</Text>}
+      </Text>
+      <TouchableOpacity
+        style={[pickerStyles.btn, { borderColor: colors.border, backgroundColor: colors.background }]}
+        onPress={() => setOpen(v => !v)}
+        activeOpacity={0.8}
+      >
+        <Text style={{ color: value ? colors.text : colors.textMuted, fontSize: FontSize.md }}>
+          {display || `Select ${label.toLowerCase()}`}
+        </Text>
+        <Text style={{ color: colors.textMuted }}>▾</Text>
+      </TouchableOpacity>
+      {open && (
+        <View style={[pickerStyles.dropdown, { borderColor: colors.border, backgroundColor: colors.backgroundElement }]}>
+          <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+            {options.map(o => (
+              <TouchableOpacity
+                key={o}
+                style={[pickerStyles.item, value === o && { backgroundColor: colors.primary + '18' }]}
+                onPress={() => { onSelect(o); setOpen(false); }}
+              >
+                <Text style={[pickerStyles.itemText, { color: value === o ? colors.primary : colors.text }]}>
+                  {optionLabels ? optionLabels[o] : o}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+    </View>
+  );
+}
+
+const pickerStyles = StyleSheet.create({
+  label: { fontSize: FontSize.sm, fontWeight: '600', marginBottom: Spacing.one },
+  btn: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    borderWidth: 1, borderRadius: BorderRadius.md,
+    padding: Spacing.two + 4, fontSize: FontSize.md,
+  },
+  dropdown: {
+    borderWidth: 1, borderRadius: BorderRadius.md,
+    marginTop: 4, zIndex: 100,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08, shadowRadius: 8, elevation: 4,
+  },
+  item: { paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 0.5, borderBottomColor: '#e5e7eb' },
+  itemText: { fontSize: FontSize.md },
+});
+
 export default function AddPropertyScreen() {
   const { colors } = useTheme();
   const styles = getStyles(colors);
 
+  // Basic Info
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [location, setLocation] = useState('');
-  const [county, setCounty] = useState('');
-  const [price, setPrice] = useState('');
   const [propertyType, setPropertyType] = useState('');
+  const [county, setCounty] = useState('');
+  const [location, setLocation] = useState('');
   const [totalUnits, setTotalUnits] = useState('1');
+  const [lat, setLat] = useState('');
+  const [lng, setLng] = useState('');
+
+  // Details
+  const [description, setDescription] = useState('');
+  const [price, setPrice] = useState('');
+  const [deposit, setDeposit] = useState('');
   const [bedrooms, setBedrooms] = useState('');
   const [bathrooms, setBathrooms] = useState('');
+  const [furnished, setFurnished] = useState(false);
+  const [leaseType, setLeaseType] = useState('monthly');
+  const [availableFrom, setAvailableFrom] = useState('');
+  const [rules, setRules] = useState('');
+
+  // Media & Amenities
   const [selectedAmenities, setSelectedAmenities] = useState([]);
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -88,6 +172,13 @@ export default function AddPropertyScreen() {
           totalUnits: totalUnits || '1',
           bedrooms: bedrooms || '0',
           bathrooms: bathrooms || '0',
+          deposit: deposit || undefined,
+          furnished: String(furnished),
+          leaseType,
+          ...(availableFrom && { availableFrom }),
+          ...(rules && { rules }),
+          ...(lat && { lat }),
+          ...(lng && { lng }),
           amenities: JSON.stringify(selectedAmenities),
         },
         images
@@ -95,8 +186,10 @@ export default function AddPropertyScreen() {
       Alert.alert('Success', 'Property submitted for review. You will be notified once approved.', [{ text: 'OK' }]);
       // Reset form
       setTitle(''); setDescription(''); setLocation(''); setCounty('');
-      setPrice(''); setPropertyType(''); setTotalUnits('1');
-      setBedrooms(''); setBathrooms(''); setSelectedAmenities([]); setImages([]);
+      setPrice(''); setDeposit(''); setPropertyType(''); setTotalUnits('1');
+      setBedrooms(''); setBathrooms(''); setFurnished(false); setLeaseType('monthly');
+      setAvailableFrom(''); setRules(''); setLat(''); setLng('');
+      setSelectedAmenities([]); setImages([]);
     } catch (error) {
       Alert.alert('Failed', error.message || 'Something went wrong.');
     } finally {
@@ -119,11 +212,11 @@ export default function AddPropertyScreen() {
         <Text style={styles.pageTitle}>Add Property</Text>
         <Text style={styles.pageSubtitle}>Your listing will be reviewed before going live.</Text>
 
-        {/* Basic Info */}
+        {/* ── BASIC INFO ── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Basic Information</Text>
+          <Text style={styles.sectionTitle}>Basic Info</Text>
 
-          <Field label="Property Title" required>
+          <Field label="Title" required>
             <TextInput
               style={styles.input}
               value={title}
@@ -132,6 +225,98 @@ export default function AddPropertyScreen() {
               placeholderTextColor={colors.textMuted}
             />
           </Field>
+
+          <View style={{ marginBottom: Spacing.two }}>
+            <Text style={styles.fieldLabel}>Property Type <Text style={styles.required}>*</Text></Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.chipRow}>
+                {PROPERTY_TYPES.map(type => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[styles.chip, propertyType === type && styles.chipActive]}
+                    onPress={() => setPropertyType(type)}
+                  >
+                    <Text style={[styles.chipText, propertyType === type && styles.chipTextActive]}>
+                      {type}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+
+          <Picker
+            label="County"
+            value={county}
+            options={COUNTIES}
+            onSelect={setCounty}
+            required
+            colors={colors}
+          />
+
+          <Field label="Location / Street Address" required>
+            <TextInput
+              style={styles.input}
+              value={location}
+              onChangeText={setLocation}
+              placeholder="e.g. Kilimani, Nairobi"
+              placeholderTextColor={colors.textMuted}
+            />
+          </Field>
+
+          <Field label="Number of Units" required>
+            <TextInput
+              style={styles.input}
+              value={totalUnits}
+              onChangeText={setTotalUnits}
+              keyboardType="numeric"
+              placeholder="1"
+              placeholderTextColor={colors.textMuted}
+            />
+          </Field>
+
+          {/* GPS Auto-detect */}
+          <LocateButton
+            counties={COUNTIES}
+            onFound={p => {
+              if (p.lat) setLat(p.lat.toFixed(6));
+              if (p.lng) setLng(p.lng.toFixed(6));
+              if (p.county) setCounty(p.county);
+              if (p.town && !location.trim()) setLocation(p.town);
+            }}
+          />
+
+          <View style={styles.row}>
+            <View style={[styles.rowItem]}>
+              <Field label="Latitude">
+                <TextInput
+                  style={styles.input}
+                  value={lat}
+                  onChangeText={setLat}
+                  keyboardType="decimal-pad"
+                  placeholder="-1.292066"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </Field>
+            </View>
+            <View style={[styles.rowItem]}>
+              <Field label="Longitude">
+                <TextInput
+                  style={styles.input}
+                  value={lng}
+                  onChangeText={setLng}
+                  keyboardType="decimal-pad"
+                  placeholder="36.821945"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </Field>
+            </View>
+          </View>
+        </View>
+
+        {/* ── DETAILS ── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Details</Text>
 
           <Field label="Description" required>
             <TextInput
@@ -144,61 +329,33 @@ export default function AddPropertyScreen() {
             />
           </Field>
 
-          <Field label="Location / Street Address" required>
-            <TextInput
-              style={styles.input}
-              value={location}
-              onChangeText={setLocation}
-              placeholder="e.g. Kilimani, Nairobi"
-              placeholderTextColor={colors.textMuted}
-            />
-          </Field>
-
-          <Field label="County" required>
-            <TextInput
-              style={styles.input}
-              value={county}
-              onChangeText={setCounty}
-              placeholder="e.g. Nairobi"
-              placeholderTextColor={colors.textMuted}
-            />
-          </Field>
-
-          <Field label="Monthly Rent (KES)" required>
-            <TextInput
-              style={styles.input}
-              value={price}
-              onChangeText={setPrice}
-              keyboardType="numeric"
-              placeholder="e.g. 25000"
-              placeholderTextColor={colors.textMuted}
-            />
-          </Field>
-        </View>
-
-        {/* Property Type */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Property Type <Text style={styles.required}>*</Text></Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.chipRow}>
-              {PROPERTY_TYPES.map(type => (
-                <TouchableOpacity
-                  key={type}
-                  style={[styles.chip, propertyType === type && styles.chipActive]}
-                  onPress={() => setPropertyType(type)}
-                >
-                  <Text style={[styles.chipText, propertyType === type && styles.chipTextActive]}>
-                    {type}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+          <View style={styles.row}>
+            <View style={styles.rowItem}>
+              <Field label="Price (KES)" required>
+                <TextInput
+                  style={styles.input}
+                  value={price}
+                  onChangeText={setPrice}
+                  keyboardType="numeric"
+                  placeholder="e.g. 25000"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </Field>
             </View>
-          </ScrollView>
-        </View>
+            <View style={styles.rowItem}>
+              <Field label="Deposit (KES)">
+                <TextInput
+                  style={styles.input}
+                  value={deposit}
+                  onChangeText={setDeposit}
+                  keyboardType="numeric"
+                  placeholder="Optional"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </Field>
+            </View>
+          </View>
 
-        {/* Units & Size */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Units & Size</Text>
           <View style={styles.row}>
             <View style={styles.rowItem}>
               <Field label="Bedrooms">
@@ -224,26 +381,62 @@ export default function AddPropertyScreen() {
                 />
               </Field>
             </View>
-            <View style={styles.rowItem}>
-              <Field label="Total Units">
-                <TextInput
-                  style={styles.input}
-                  value={totalUnits}
-                  onChangeText={setTotalUnits}
-                  keyboardType="numeric"
-                  placeholder="1"
-                  placeholderTextColor={colors.textMuted}
-                />
-              </Field>
+          </View>
+
+          <View style={[styles.field, styles.switchRow]}>
+            <Text style={styles.fieldLabel}>Furnished</Text>
+            <Switch
+              value={furnished}
+              onValueChange={setFurnished}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor="#fff"
+            />
+          </View>
+
+          <View style={{ marginBottom: Spacing.two }}>
+            <Text style={styles.fieldLabel}>Lease Type</Text>
+            <View style={styles.chipRow}>
+              {LEASE_TYPES.map(lt => (
+                <TouchableOpacity
+                  key={lt}
+                  style={[styles.chip, leaseType === lt && styles.chipActive]}
+                  onPress={() => setLeaseType(lt)}
+                >
+                  <Text style={[styles.chipText, leaseType === lt && styles.chipTextActive]}>
+                    {LEASE_LABELS[lt]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
+
+          <Field label="Available From">
+            <TextInput
+              style={styles.input}
+              value={availableFrom}
+              onChangeText={setAvailableFrom}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={colors.textMuted}
+            />
+          </Field>
+
+          <Field label="House Rules">
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={rules}
+              onChangeText={setRules}
+              placeholder="e.g. No pets, no smoking inside..."
+              placeholderTextColor={colors.textMuted}
+              multiline
+            />
+          </Field>
         </View>
 
-        {/* Photos */}
+        {/* ── PHOTOS ── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Photos <Text style={styles.required}>*</Text></Text>
           <TouchableOpacity style={styles.photoPickerBtn} onPress={pickImages}>
-            <Text style={styles.photoPickerText}>+ Add Photos</Text>
+            <Text style={styles.photoPickerText}>+ Add Photos (max 10)</Text>
           </TouchableOpacity>
           {images.length > 0 && (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageRow}>
@@ -251,7 +444,7 @@ export default function AddPropertyScreen() {
                 <View key={index} style={styles.imageWrapper}>
                   <Image source={{ uri }} style={styles.imageThumb} />
                   <TouchableOpacity style={styles.imageRemove} onPress={() => removeImage(index)}>
-                    <Text style={styles.imageRemoveText}>x</Text>
+                    <Text style={styles.imageRemoveText}>×</Text>
                   </TouchableOpacity>
                 </View>
               ))}
@@ -259,7 +452,7 @@ export default function AddPropertyScreen() {
           )}
         </View>
 
-        {/* Amenities */}
+        {/* ── AMENITIES ── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Amenities <Text style={styles.required}>*</Text></Text>
           <View style={styles.amenitiesGrid}>
@@ -277,7 +470,7 @@ export default function AddPropertyScreen() {
           </View>
         </View>
 
-        {/* Submit */}
+        {/* ── SUBMIT ── */}
         <TouchableOpacity
           style={[styles.submitBtn, loading && { opacity: 0.6 }]}
           onPress={handleSubmit}
@@ -343,7 +536,8 @@ const getStyles = (colors) => StyleSheet.create({
   textArea: { minHeight: 90, textAlignVertical: 'top' },
   row: { flexDirection: 'row', gap: Spacing.two },
   rowItem: { flex: 1 },
-  chipRow: { flexDirection: 'row', gap: Spacing.two },
+  switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  chipRow: { flexDirection: 'row', gap: Spacing.two, flexWrap: 'wrap' },
   chip: {
     borderWidth: 1,
     borderColor: colors.border,
@@ -374,16 +568,13 @@ const getStyles = (colors) => StyleSheet.create({
   imageThumb: { width: 80, height: 80, borderRadius: BorderRadius.md },
   imageRemove: {
     position: 'absolute',
-    top: -6,
-    right: -6,
+    top: -6, right: -6,
     backgroundColor: colors.danger,
     borderRadius: 12,
-    width: 22,
-    height: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 22, height: 22,
+    alignItems: 'center', justifyContent: 'center',
   },
-  imageRemoveText: { color: '#fff', fontWeight: '700', fontSize: 12 },
+  imageRemoveText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   submitBtn: {
     backgroundColor: colors.primary,
     borderRadius: BorderRadius.md,
