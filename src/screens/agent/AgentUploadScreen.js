@@ -7,47 +7,51 @@ import {
 import LocateButton from '../../components/LocateButton';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import * as SecureStore from 'expo-secure-store';
 import Svg, { Path, Line, X } from 'react-native-svg';
+import UniversityPicker from '../../components/UniversityPicker';
+import { HOSTEL_PROPERTY_TYPE, OWNERSHIP_TYPES, SALE_TERMS } from '../../constants/propertyOptions';
+import { uploadOwnershipDocument } from '../../services/api';
 
 /* ── Exact colors from Upload.jsx on the website ────────────────────── */
 const C = {
   rootBg:           '#f8f4f0',
   white:            '#ffffff',
   headerBorder:     '#e5e7eb',
-  logoAccent:       '#fbbf24',
+  logoAccent:       '#e11d48',
   logoWord:         '#1f2937',
   title:            '#1f2937',
   subtitle:         '#6b7280',
   label:            '#374151',
   inputBorder:      '#e5e7eb',
-  inputFocus:       '#fbbf24',
+  inputFocus:       '#e11d48',
   hint:             '#9ca3af',
   cardBorder:       '#e5e7eb',
   // Step indicator
-  stepActiveBg:     '#fbbf24',
+  stepActiveBg:     '#e11d48',
   stepActiveText:   '#1f2937',
-  stepDoneBg:       '#10b981',
+  stepDoneBg:       '#e11d48',
   stepDoneText:     '#ffffff',
   stepInactiveBg:   '#e5e7eb',
   stepInactiveText: '#6b7280',
   // Buttons
-  primaryBg:        '#fbbf24',
+  primaryBg:        '#e11d48',
   primaryText:      '#1f2937',
   secondaryBg:      '#e5e7eb',
   secondaryText:    '#4b5563',
   // Upload image area
-  imgUploadBorder:  '#fbbf24',
-  imgUploadBg:      '#fffbeb',
-  imgUploadText:    '#d97706',
+  imgUploadBorder:  '#e11d48',
+  imgUploadBg:      '#eff6ff',
+  imgUploadText:    '#1e3a5f',
   // Amenity toggle
-  amenityActive:    '#fbbf24',
+  amenityActive:    '#e11d48',
   amenityActiveTxt: '#1f2937',
   // Error/success
   errorBg:          '#fee2e2',
   errorText:        '#dc2626',
-  successBg:        '#dcfce7',
-  successText:      '#166534',
+  successBg:        '#dbeafe',
+  successText:      '#1e3a5f',
 };
 
 const API_BASE = 'https://axx-spaces-backend-1.onrender.com/api';
@@ -148,16 +152,56 @@ function StepBar({ step }) {
   );
 }
 
-export default function AgentUploadScreen({ onBack, onSuccess }) {
+export default function AgentUploadScreen({ onBack, onSuccess, editProperty }) {
+  const isEditMode = !!editProperty;
   const [step, setStep]   = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError]   = useState('');
   const [success, setSuccess] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [focused, setFocused] = useState({});
-  const [images, setImages] = useState([]);   // { uri, name, type }[]
+  // In edit mode: existing images are shown as {uri, name, type, existing: true}
+  const [images, setImages] = useState(
+    isEditMode
+      ? (editProperty.images || []).map((img, i) => ({
+          uri:  typeof img === 'object' ? (img.imageUrl || img.url || '') : img,
+          name: `existing_${i}.jpg`,
+          type: 'image/jpeg',
+          existing: true,
+        })).filter(img => !!img.uri)
+      : []
+  );
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState(isEditMode ? {
+    listingType:  editProperty.listingType === 'sale' ? 'sale' : 'rent',
+    title:        editProperty.title        || '',
+    propertyType: editProperty.propertyType || '',
+    county:       editProperty.county       || '',
+    location:     editProperty.location     || '',
+    totalUnits:   String(editProperty.totalUnits   || '1'),
+    lat:          String(editProperty.lat           || ''),
+    lng:          String(editProperty.lng           || ''),
+    description:  editProperty.description  || '',
+    price:        String(editProperty.price         || ''),
+    deposit:      String(editProperty.deposit       || ''),
+    bedrooms:     String(editProperty.bedrooms      || ''),
+    bathrooms:    String(editProperty.bathrooms     || ''),
+    bookedUnits:  String(editProperty.bookedUnits   || '0'),
+    leaseType:    editProperty.leaseType    || 'monthly',
+    furnished:    !!editProperty.furnished,
+    availableFrom: editProperty.availableFrom || '',
+    rules:        editProperty.rules         || '',
+    amenities:    Array.isArray(editProperty.amenities) ? editProperty.amenities : [],
+    priceNegotiable: !!editProperty.priceNegotiable,
+    saleTerms:    editProperty.saleTerms || 'cash',
+    ownershipType: editProperty.ownershipType || '',
+    titleNumber:  editProperty.titleNumber || '',
+    plotSize:     editProperty.plotSize || '',
+    yearBuilt:    editProperty.yearBuilt ? String(editProperty.yearBuilt) : '',
+    university:   editProperty.university || '',
+    universityId: editProperty.universityId ? String(editProperty.universityId) : '',
+  } : {
+    listingType: 'rent',
     title: '', propertyType: '', county: '', location: '',
     totalUnits: '1', lat: '', lng: '',
     description: '', price: '', deposit: '',
@@ -165,8 +209,28 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
     leaseType: 'monthly', furnished: false,
     availableFrom: '', rules: '',
     amenities: [],
+    priceNegotiable: false, saleTerms: 'cash', ownershipType: '',
+    titleNumber: '', plotSize: '', yearBuilt: '',
+    university: '', universityId: '',
   });
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
+
+  const isSale = form.listingType === 'sale';
+  const universityRequired = !isSale && form.propertyType === HOSTEL_PROPERTY_TYPE;
+
+  const [videos, setVideos] = useState([]);
+  const [existingVideos, setExistingVideos] = useState(
+    isEditMode && Array.isArray(editProperty.videos) ? editProperty.videos : []
+  );
+  const [ownershipDoc, setOwnershipDoc] = useState(null);
+  const [existingProofUrl, setExistingProofUrl] = useState(
+    isEditMode ? (editProperty.listingAuthorization?.proofUrl || editProperty.ownershipProofUrl || '') : ''
+  );
+  const [selectedUniversity, setSelectedUniversity] = useState(
+    isEditMode && editProperty.universityId
+      ? { id: editProperty.universityId, name: editProperty.university || '' }
+      : null
+  );
 
   /* ── Validation per step ─────────────────────────────────────── */
   const validateStep = () => {
@@ -175,17 +239,20 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
       if (!form.propertyType) return 'Property type is required';
       if (!form.county) return 'County is required';
       if (!form.location.trim()) return 'Location is required';
-      if (!form.totalUnits || Number(form.totalUnits) < 1) return 'Number of units must be at least 1';
+      if (!isSale && (!form.totalUnits || Number(form.totalUnits) < 1)) return 'Number of units must be at least 1';
+      if (universityRequired && !form.universityId) return 'Select the university this hostel is linked to';
     }
     if (step === 1) {
       if (!form.description.trim()) return 'Description is required';
       if (!form.price || Number(form.price) <= 0) return 'Price is required';
+      if (isSale && !form.ownershipType) return 'Select the ownership type for this sale listing';
     }
     if (step === 2) {
       if (images.length === 0) return 'Please upload at least one image';
     }
     if (step === 3) {
-      if (form.amenities.length === 0) return 'Select at least one amenity';
+      if (!isSale && form.amenities.length === 0) return 'Select at least one amenity';
+      if (isSale && !ownershipDoc && !existingProofUrl) return 'Upload the ownership document before publishing a sale listing';
       if (!agreed) return 'Please agree to the listing terms';
     }
     return null;
@@ -221,6 +288,44 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
 
   const removeImage = (idx) => setImages(prev => prev.filter((_, i) => i !== idx));
 
+  const pickVideos = async () => {
+    if (existingVideos.length + videos.length >= 5) {
+      setError('Maximum 5 videos allowed per listing');
+      return;
+    }
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') { Alert.alert('Permission required', 'Allow access to your videos'); return; }
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['videos'],
+      allowsMultipleSelection: true,
+    });
+    if (!res.canceled && res.assets?.length) {
+      const tooLarge = res.assets.find(a => a.fileSize && a.fileSize > 100 * 1024 * 1024);
+      if (tooLarge) {
+        setError(`${tooLarge.fileName || 'A video'} exceeds the 100MB limit`);
+        return;
+      }
+      setVideos(prev => [...prev, ...res.assets].slice(0, 5 - existingVideos.length));
+      setError('');
+    }
+  };
+
+  const pickOwnershipDoc = async () => {
+    const res = await DocumentPicker.getDocumentAsync({
+      type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'image/*'],
+      copyToCacheDirectory: true,
+    });
+    if (res.canceled) return;
+    const asset = res.assets?.[0];
+    if (!asset) return;
+    if (asset.size && asset.size > 10 * 1024 * 1024) {
+      setError('Ownership document must be 10MB or smaller');
+      return;
+    }
+    setOwnershipDoc(asset);
+    setError('');
+  };
+
   /* ── Amenity toggle ──────────────────────────────────────────── */
   const toggleAmenity = (a) => {
     set('amenities', form.amenities.includes(a)
@@ -238,43 +343,92 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
 
     try {
       const token = await SecureStore.getItemAsync('agent_token');
+
+      let ownershipProofUrl = existingProofUrl;
+      if (isSale && ownershipDoc) {
+        ownershipProofUrl = await uploadOwnershipDocument(ownershipDoc, 'agent_token');
+      }
+
       const fd = new FormData();
 
       // Append text fields
+      fd.append('listingType',  form.listingType);
       fd.append('title',        form.title.trim());
       fd.append('propertyType', form.propertyType);
       fd.append('county',       form.county);
       fd.append('location',     form.location.trim());
-      fd.append('totalUnits',   form.totalUnits);
       fd.append('description',  form.description.trim());
       fd.append('price',        form.price);
-      fd.append('leaseType',    form.leaseType);
-      fd.append('furnished',    form.furnished ? 'true' : 'false');
-      if (form.deposit)       fd.append('deposit',       form.deposit);
+      if (!isSale) fd.append('totalUnits', form.totalUnits);
+      if (!isSale) fd.append('leaseType',  form.leaseType);
+      if (!isSale) fd.append('furnished',  form.furnished ? 'true' : 'false');
+      if (!isSale && form.deposit) fd.append('deposit', form.deposit);
       if (form.bedrooms)      fd.append('bedrooms',      form.bedrooms);
       if (form.bathrooms)     fd.append('bathrooms',     form.bathrooms);
-      if (form.bookedUnits)   fd.append('bookedUnits',   form.bookedUnits);
+      if (!isSale && form.bookedUnits) fd.append('bookedUnits', form.bookedUnits);
       if (form.lat)           fd.append('lat',           form.lat);
       if (form.lng)           fd.append('lng',           form.lng);
-      if (form.availableFrom) fd.append('availableFrom', form.availableFrom);
+      if (!isSale && form.availableFrom) fd.append('availableFrom', form.availableFrom);
       if (form.rules)         fd.append('rules',         form.rules.trim());
+
+      if (isSale) {
+        fd.append('priceNegotiable', form.priceNegotiable ? 'true' : 'false');
+        fd.append('saleTerms',       form.saleTerms || 'cash');
+        fd.append('ownershipType',   form.ownershipType);
+        if (form.titleNumber) fd.append('titleNumber', form.titleNumber.trim());
+        if (form.plotSize)    fd.append('plotSize',    form.plotSize.trim());
+        if (form.yearBuilt)   fd.append('yearBuilt',   form.yearBuilt);
+        if (ownershipProofUrl) fd.append('ownershipProofUrl', ownershipProofUrl);
+      } else {
+        if (form.university)   fd.append('university',   form.university);
+        if (form.universityId) fd.append('universityId', form.universityId);
+      }
 
       // Amenities — send as JSON string (backend can parse)
       fd.append('amenities', JSON.stringify(form.amenities));
 
-      // Images — correct React Native format
-      images.forEach((img) => {
-        fd.append('images', {
-          uri:  img.uri,
-          name: img.name || 'photo.jpg',
-          type: img.type || 'image/jpeg',
+      if (isEditMode) {
+        // In edit mode: tell backend which existing images/videos to keep
+        const kept = images.filter(img => img.existing).map(img => img.uri);
+        fd.append('remainingImages', JSON.stringify(kept));
+        fd.append('remainingVideos', JSON.stringify(existingVideos));
+        // Only upload newly added images
+        images.filter(img => !img.existing).forEach((img) => {
+          fd.append('images', {
+            uri:  img.uri,
+            name: img.name || 'photo.jpg',
+            type: img.type || 'image/jpeg',
+          });
+        });
+      } else {
+        // New upload: send all images
+        images.forEach((img) => {
+          fd.append('images', {
+            uri:  img.uri,
+            name: img.name || 'photo.jpg',
+            type: img.type || 'image/jpeg',
+          });
+        });
+      }
+
+      videos.forEach((asset, i) => {
+        const uri = asset.uri;
+        const ext = uri.split('.').pop() || 'mp4';
+        fd.append('videos', {
+          uri,
+          name: asset.fileName || `walkthrough_${Date.now()}_${i}.${ext}`,
+          type: asset.mimeType || 'video/mp4',
         });
       });
 
       // XHR — handles multipart/form-data files correctly in React Native
       await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', `${API_BASE}/properties`);
+        const method = isEditMode ? 'PATCH' : 'POST';
+        const url    = isEditMode
+          ? `${API_BASE}/properties/${editProperty._id}`
+          : `${API_BASE}/properties`;
+        xhr.open(method, url);
         xhr.setRequestHeader('Authorization', `Bearer ${token}`);
 
         xhr.onload = () => {
@@ -294,10 +448,13 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
         xhr.send(fd);
       });
 
-      setSuccess('Property uploaded successfully! It is now pending review.');
+      setSuccess(isEditMode
+        ? 'Property updated successfully!'
+        : 'Property uploaded successfully! It is now pending review.'
+      );
       setTimeout(onSuccess, 2000);
     } catch (err) {
-      setError(err.message || 'Upload failed. Please try again.');
+      setError(err.message || (isEditMode ? 'Update failed. Please try again.' : 'Upload failed. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -308,6 +465,24 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
     if (step === 0) return (
       <View>
         <Text style={styles.stepTitle}>Basic Information</Text>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Listing intention</Text>
+          <View style={styles.modeRow}>
+            {[{ key: 'rent', label: 'For Rent' }, { key: 'sale', label: 'For Sale' }].map((opt) => (
+              <TouchableOpacity
+                key={opt.key}
+                style={[styles.modeBtn, form.listingType === opt.key && styles.modeBtnActive]}
+                onPress={() => set('listingType', opt.key)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.modeText, form.listingType === opt.key && styles.modeTextActive]}>
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
 
         <View style={styles.field}>
           <Text style={styles.label}>Property Title *</Text>
@@ -340,6 +515,31 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
           if (area && !String(form.location || '').trim()) set('location', area);
         }} />
 
+        <View style={styles.row}>
+          <View style={[styles.field, { flex: 1 }]}>
+            <Text style={styles.label}>Latitude</Text>
+            <TextInput
+              style={[styles.input, focused.lat && styles.inputFocused]}
+              placeholder="-1.292066"
+              placeholderTextColor={C.hint}
+              keyboardType="decimal-pad"
+              value={form.lat}
+              onChangeText={v => set('lat', v)}
+            />
+          </View>
+          <View style={[styles.field, { flex: 1 }]}>
+            <Text style={styles.label}>Longitude</Text>
+            <TextInput
+              style={[styles.input, focused.lng && styles.inputFocused]}
+              placeholder="36.821945"
+              placeholderTextColor={C.hint}
+              keyboardType="decimal-pad"
+              value={form.lng}
+              onChangeText={v => set('lng', v)}
+            />
+          </View>
+        </View>
+
         <Picker
           label="County *"
           value={form.county}
@@ -363,19 +563,57 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
           />
         </View>
 
-        <View style={styles.field}>
-          <Text style={styles.label}>Total Units *</Text>
-          <TextInput
-            style={[styles.input, focused.totalUnits && styles.inputFocused]}
-            placeholder="1"
-            placeholderTextColor={C.hint}
-            keyboardType="number-pad"
-            value={form.totalUnits}
-            onChangeText={v => set('totalUnits', v)}
-            onFocus={() => setFocused(f => ({ ...f, totalUnits: true }))}
-            onBlur={() => setFocused(f => ({ ...f, totalUnits: false }))}
-          />
-        </View>
+        {isSale ? (
+          <View style={styles.field}>
+            <Text style={styles.label}>Plot / Built-up Size</Text>
+            <TextInput
+              style={[styles.input, focused.plotSize && styles.inputFocused]}
+              placeholder="e.g. 50x100 ft or 0.25 acre"
+              placeholderTextColor={C.hint}
+              value={form.plotSize}
+              onChangeText={v => set('plotSize', v)}
+            />
+          </View>
+        ) : (
+          <>
+            <View style={styles.field}>
+              <Text style={styles.label}>Total Units *</Text>
+              <TextInput
+                style={[styles.input, focused.totalUnits && styles.inputFocused]}
+                placeholder="1"
+                placeholderTextColor={C.hint}
+                keyboardType="number-pad"
+                value={form.totalUnits}
+                onChangeText={v => set('totalUnits', v)}
+                onFocus={() => setFocused(f => ({ ...f, totalUnits: true }))}
+                onBlur={() => setFocused(f => ({ ...f, totalUnits: false }))}
+              />
+            </View>
+
+            <UniversityPicker
+              value={selectedUniversity}
+              onChange={(uni) => {
+                setSelectedUniversity(uni);
+                set('university', uni?.name || '');
+                set('universityId', uni ? String(uni.id) : '');
+              }}
+              required={universityRequired}
+              label={universityRequired ? 'Linked Campus / University *' : 'Nearby University (Optional)'}
+              hint={universityRequired
+                ? 'Required for hostel listings so students find your property.'
+                : 'Link your property to a nearby campus to appear in student hostel searches.'}
+              colors={{
+                text: C.title,
+                textSecondary: C.label,
+                textMuted: C.hint,
+                border: C.inputBorder,
+                background: C.white,
+                backgroundElement: C.white,
+                primary: C.logoAccent,
+              }}
+            />
+          </>
+        )}
       </View>
     );
 
@@ -401,10 +639,10 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
 
         <View style={styles.row}>
           <View style={[styles.field, { flex: 1 }]}>
-            <Text style={styles.label}>Price (KES) *</Text>
+            <Text style={styles.label}>{isSale ? 'Asking Price (KES) *' : 'Monthly Rent (KES) *'}</Text>
             <TextInput
               style={[styles.input, focused.price && styles.inputFocused]}
-              placeholder="e.g. 25000"
+              placeholder={isSale ? 'e.g. 8500000' : 'e.g. 25000'}
               placeholderTextColor={C.hint}
               keyboardType="number-pad"
               value={form.price}
@@ -413,20 +651,44 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
               onBlur={() => setFocused(f => ({ ...f, price: false }))}
             />
           </View>
-          <View style={[styles.field, { flex: 1 }]}>
-            <Text style={styles.label}>Deposit (KES)</Text>
-            <TextInput
-              style={[styles.input, focused.deposit && styles.inputFocused]}
-              placeholder="Optional"
-              placeholderTextColor={C.hint}
-              keyboardType="number-pad"
-              value={form.deposit}
-              onChangeText={v => set('deposit', v)}
-              onFocus={() => setFocused(f => ({ ...f, deposit: true }))}
-              onBlur={() => setFocused(f => ({ ...f, deposit: false }))}
-            />
-          </View>
+          {isSale ? (
+            <View style={[styles.field, { flex: 1 }]}>
+              <Picker
+                label="Payment Terms"
+                value={SALE_TERMS.find(t => t.value === form.saleTerms)?.label || 'Cash'}
+                options={SALE_TERMS.map(t => t.label)}
+                onSelect={label => set('saleTerms', SALE_TERMS.find(t => t.label === label)?.value || 'cash')}
+              />
+            </View>
+          ) : (
+            <View style={[styles.field, { flex: 1 }]}>
+              <Text style={styles.label}>Deposit (KES)</Text>
+              <TextInput
+                style={[styles.input, focused.deposit && styles.inputFocused]}
+                placeholder="Optional"
+                placeholderTextColor={C.hint}
+                keyboardType="number-pad"
+                value={form.deposit}
+                onChangeText={v => set('deposit', v)}
+                onFocus={() => setFocused(f => ({ ...f, deposit: true }))}
+                onBlur={() => setFocused(f => ({ ...f, deposit: false }))}
+              />
+            </View>
+          )}
         </View>
+
+        {isSale && (
+          <TouchableOpacity
+            style={[styles.field, { flexDirection: 'row', alignItems: 'center', gap: 12 }]}
+            onPress={() => set('priceNegotiable', !form.priceNegotiable)}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.checkbox, form.priceNegotiable && styles.checkboxActive]}>
+              {form.priceNegotiable && <Text style={{ color: C.primaryText, fontWeight: '800', fontSize: 12 }}>✓</Text>}
+            </View>
+            <Text style={styles.label}>Asking price is negotiable</Text>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.row}>
           <View style={[styles.field, { flex: 1 }]}>
@@ -457,34 +719,40 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
           </View>
         </View>
 
-        <Picker
-          label="Lease Type"
-          value={form.leaseType}
-          options={['monthly', '6months', 'yearly']}
-          onSelect={v => set('leaseType', v)}
-          focused={focused.leaseType}
-          onFocus={() => setFocused(f => ({ ...f, leaseType: true }))}
-          onBlur={() => setFocused(f => ({ ...f, leaseType: false }))}
-        />
+        {!isSale && (
+          <>
+            <Picker
+              label="Lease Type"
+              value={form.leaseType}
+              options={['monthly', '6months', 'yearly']}
+              onSelect={v => set('leaseType', v)}
+              focused={focused.leaseType}
+              onFocus={() => setFocused(f => ({ ...f, leaseType: true }))}
+              onBlur={() => setFocused(f => ({ ...f, leaseType: false }))}
+            />
+
+            <View style={styles.field}>
+              <Text style={styles.label}>Available From</Text>
+              <TextInput
+                style={[styles.input, focused.availableFrom && styles.inputFocused]}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={C.hint}
+                value={form.availableFrom}
+                onChangeText={v => set('availableFrom', v)}
+                onFocus={() => setFocused(f => ({ ...f, availableFrom: true }))}
+                onBlur={() => setFocused(f => ({ ...f, availableFrom: false }))}
+              />
+            </View>
+          </>
+        )}
 
         <View style={styles.field}>
-          <Text style={styles.label}>Available From</Text>
-          <TextInput
-            style={[styles.input, focused.availableFrom && styles.inputFocused]}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={C.hint}
-            value={form.availableFrom}
-            onChangeText={v => set('availableFrom', v)}
-            onFocus={() => setFocused(f => ({ ...f, availableFrom: true }))}
-            onBlur={() => setFocused(f => ({ ...f, availableFrom: false }))}
-          />
-        </View>
-
-        <View style={styles.field}>
-          <Text style={styles.label}>House Rules</Text>
+          <Text style={styles.label}>{isSale ? 'Viewing Notes' : 'House Rules'}</Text>
           <TextInput
             style={[styles.input, styles.textarea, focused.rules && styles.inputFocused]}
-            placeholder="e.g. No pets, no smoking inside..."
+            placeholder={isSale
+              ? 'e.g. Viewings on weekends only, serious buyers please'
+              : 'e.g. No pets, no smoking inside...'}
             placeholderTextColor={C.hint}
             multiline
             numberOfLines={3}
@@ -496,16 +764,60 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
           />
         </View>
 
-        {/* Furnished toggle */}
-        <View style={[styles.field, { flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
-          <TouchableOpacity
-            style={[styles.checkbox, form.furnished && styles.checkboxActive]}
-            onPress={() => set('furnished', !form.furnished)}
-          >
-            {form.furnished && <Text style={{ color: C.primaryText, fontWeight: '800', fontSize: 12 }}>✓</Text>}
-          </TouchableOpacity>
-          <Text style={styles.label}>Furnished</Text>
-        </View>
+        {isSale && (
+          <>
+            <Picker
+              label="Ownership Type *"
+              value={OWNERSHIP_TYPES.find(t => t.value === form.ownershipType)?.label || 'Select Ownership Type'}
+              options={OWNERSHIP_TYPES.map(t => t.label)}
+              onSelect={label => set('ownershipType', OWNERSHIP_TYPES.find(t => t.label === label)?.value || '')}
+              focused={focused.ownershipType}
+              onFocus={() => setFocused(f => ({ ...f, ownershipType: true }))}
+              onBlur={() => setFocused(f => ({ ...f, ownershipType: false }))}
+            />
+
+            <View style={styles.row}>
+              <View style={[styles.field, { flex: 1 }]}>
+                <Text style={styles.label}>Title / Plot Number</Text>
+                <TextInput
+                  style={[styles.input, focused.titleNumber && styles.inputFocused]}
+                  placeholder="e.g. Nairobi/Block 92/1234"
+                  placeholderTextColor={C.hint}
+                  value={form.titleNumber}
+                  onChangeText={v => set('titleNumber', v)}
+                  onFocus={() => setFocused(f => ({ ...f, titleNumber: true }))}
+                  onBlur={() => setFocused(f => ({ ...f, titleNumber: false }))}
+                />
+              </View>
+              <View style={[styles.field, { flex: 1 }]}>
+                <Text style={styles.label}>Year Built</Text>
+                <TextInput
+                  style={[styles.input, focused.yearBuilt && styles.inputFocused]}
+                  placeholder="e.g. 2019"
+                  placeholderTextColor={C.hint}
+                  keyboardType="number-pad"
+                  value={form.yearBuilt}
+                  onChangeText={v => set('yearBuilt', v)}
+                  onFocus={() => setFocused(f => ({ ...f, yearBuilt: true }))}
+                  onBlur={() => setFocused(f => ({ ...f, yearBuilt: false }))}
+                />
+              </View>
+            </View>
+          </>
+        )}
+
+        {/* Furnished toggle — rentals only */}
+        {!isSale && (
+          <View style={[styles.field, { flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
+            <TouchableOpacity
+              style={[styles.checkbox, form.furnished && styles.checkboxActive]}
+              onPress={() => set('furnished', !form.furnished)}
+            >
+              {form.furnished && <Text style={{ color: C.primaryText, fontWeight: '800', fontSize: 12 }}>✓</Text>}
+            </TouchableOpacity>
+            <Text style={styles.label}>Furnished</Text>
+          </View>
+        )}
       </View>
     );
 
@@ -515,7 +827,7 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
         <Text style={[styles.hint, { marginBottom: 16 }]}>Add up to 10 photos of the property.</Text>
 
         <TouchableOpacity style={styles.imgUploadArea} onPress={pickImages} activeOpacity={0.8}>
-          <Text style={styles.imgUploadIcon}>📷</Text>
+          <Text style={styles.imgUploadIcon}>+</Text>
           <Text style={styles.imgUploadText}>Tap to select photos</Text>
           <Text style={styles.imgUploadHint}>JPG, PNG — up to 10 photos</Text>
         </TouchableOpacity>
@@ -525,6 +837,11 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
             {images.map((img, idx) => (
               <View key={idx} style={styles.imgItem}>
                 <Image source={{ uri: img.uri }} style={styles.imgThumb} resizeMode="cover" />
+                {idx === 0 && (
+                  <View style={styles.coverBadge}>
+                    <Text style={styles.coverBadgeText}>COVER</Text>
+                  </View>
+                )}
                 <TouchableOpacity style={styles.imgRemove} onPress={() => removeImage(idx)}>
                   <Text style={{ color: '#fff', fontSize: 10, fontWeight: '800' }}>✕</Text>
                 </TouchableOpacity>
@@ -532,13 +849,46 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
             ))}
           </View>
         )}
+
+        {/* Walkthrough video */}
+        <View style={[styles.field, { marginTop: 24 }]}>
+          <Text style={styles.label}>Walkthrough Video (Optional)</Text>
+          <Text style={styles.hint}>Add up to 5 videos, max 100MB each.</Text>
+
+          {(existingVideos.length > 0 || videos.length > 0) && (
+            <View style={{ gap: 8, marginTop: 10 }}>
+              {existingVideos.map((url, idx) => (
+                <View key={`existing-${idx}`} style={styles.videoRow}>
+                  <Text style={styles.videoName} numberOfLines={1}>Saved video #{idx + 1}</Text>
+                  <TouchableOpacity onPress={() => setExistingVideos(prev => prev.filter((_, i) => i !== idx))}>
+                    <Text style={styles.videoRemove}>Remove</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {videos.map((asset, idx) => (
+                <View key={`new-${idx}`} style={styles.videoRow}>
+                  <Text style={styles.videoName} numberOfLines={1}>{asset.fileName || `Video ${idx + 1}`}</Text>
+                  <TouchableOpacity onPress={() => setVideos(prev => prev.filter((_, i) => i !== idx))}>
+                    <Text style={styles.videoRemove}>Remove</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+
+          <TouchableOpacity style={styles.videoPickerBtn} onPress={pickVideos} activeOpacity={0.8}>
+            <Text style={styles.videoPickerText}>+ Add Walkthrough Video</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
 
     if (step === 3) return (
       <View>
         <Text style={styles.stepTitle}>Amenities & Terms</Text>
-        <Text style={[styles.hint, { marginBottom: 16 }]}>Select all that apply.</Text>
+        <Text style={[styles.hint, { marginBottom: 16 }]}>
+          {isSale ? 'Select any amenities that apply, then attach the ownership document.' : 'Select all that apply.'}
+        </Text>
 
         <View style={styles.amenitiesGrid}>
           {AMENITIES_LIST.map(a => (
@@ -555,6 +905,25 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
           ))}
         </View>
 
+        {isSale && (
+          <View style={styles.docCard}>
+            <Text style={styles.docTitle}>Ownership Document *</Text>
+            <Text style={[styles.hint, { marginBottom: 10 }]}>
+              Upload the title deed, sectional title, share certificate or sale agreement.
+              PDF, Word or a clear photo — maximum 10MB. Only administrators can review it.
+            </Text>
+            <TouchableOpacity style={styles.videoPickerBtn} onPress={pickOwnershipDoc} activeOpacity={0.8}>
+              <Text style={styles.videoPickerText}>
+                {ownershipDoc
+                  ? `Selected: ${ownershipDoc.name}`
+                  : existingProofUrl
+                    ? 'Document on file — tap to replace'
+                    : '+ Upload Ownership Document'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Terms */}
         <TouchableOpacity
           style={[styles.field, { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginTop: 20 }]}
@@ -565,7 +934,9 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
             {agreed && <Text style={{ color: C.primaryText, fontWeight: '800', fontSize: 12 }}>✓</Text>}
           </View>
           <Text style={[styles.hint, { flex: 1, lineHeight: 18 }]}>
-            I confirm the property information is accurate and I agree to AXXSpace's listing terms. The listing will be reviewed before going live.
+            {isSale
+              ? 'I confirm that I am the owner or an authorised representative, that the ownership document is genuine, and that all details and photos are accurate and comply with AXXSpace listing terms.'
+              : "I confirm the property information is accurate and I agree to AXXSpace's listing terms. The listing will be reviewed before going live."}
           </Text>
         </TouchableOpacity>
       </View>
@@ -580,7 +951,7 @@ export default function AgentUploadScreen({ onBack, onSuccess }) {
           <Text style={styles.logoAccent}>AXX</Text>
           <Text style={styles.logoWord}>SPACE</Text>
         </View>
-        <Text style={styles.headerTitle}>Upload Property</Text>
+        <Text style={styles.headerTitle}>{isEditMode ? 'Edit Property' : 'Upload Property'}</Text>
         <TouchableOpacity onPress={onBack} style={{ padding: 4 }}>
           <Text style={{ color: C.logoAccent, fontWeight: '700', fontSize: 14 }}>✕</Text>
         </TouchableOpacity>
@@ -705,6 +1076,14 @@ const styles = StyleSheet.create({
   textarea:    { minHeight: 120, textAlignVertical: 'top' },
 
   pickerBtn:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  modeRow:     { flexDirection: 'row', gap: 10 },
+  modeBtn: {
+    flex: 1, paddingVertical: 12, borderRadius: 10, borderWidth: 2,
+    borderColor: C.inputBorder, backgroundColor: C.white, alignItems: 'center',
+  },
+  modeBtnActive:  { borderColor: C.logoAccent, backgroundColor: '#fff1f4' },
+  modeText:       { fontSize: 14, fontWeight: '700', color: C.subtitle },
+  modeTextActive: { color: C.logoAccent },
   dropdown:    {
     borderWidth: 2, borderColor: C.inputFocus, borderRadius: 10, marginTop: 4,
     backgroundColor: C.white,
@@ -712,7 +1091,7 @@ const styles = StyleSheet.create({
     zIndex: 999,
   },
   dropdownItem:      { paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 0.5, borderBottomColor: C.inputBorder },
-  dropdownItemActive:{ backgroundColor: '#fffbeb' },
+  dropdownItemActive:{ backgroundColor: '#eff6ff' },
   dropdownItemText:  { fontSize: 14, color: C.title },
 
   checkbox: {
@@ -742,6 +1121,31 @@ const styles = StyleSheet.create({
     backgroundColor: C.errorText,
     justifyContent: 'center', alignItems: 'center',
   },
+  coverBadge: {
+    position: 'absolute', left: 4, bottom: 4,
+    backgroundColor: 'rgba(30,58,95,0.85)', borderRadius: 4,
+    paddingHorizontal: 6, paddingVertical: 2,
+  },
+  coverBadgeText: { color: '#fff', fontSize: 8, fontWeight: '800', letterSpacing: 0.4 },
+
+  /* Videos / documents */
+  videoRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    gap: 8, paddingVertical: 8, paddingHorizontal: 10,
+    borderWidth: 1, borderColor: C.inputBorder, borderRadius: 8, backgroundColor: C.white,
+  },
+  videoName:   { flex: 1, fontSize: 12, fontWeight: '600', color: C.title },
+  videoRemove: { fontSize: 12, fontWeight: '700', color: C.errorText },
+  videoPickerBtn: {
+    borderWidth: 2, borderColor: C.imgUploadBorder, borderStyle: 'dashed',
+    borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 10,
+  },
+  videoPickerText: { fontSize: 13, fontWeight: '700', color: C.imgUploadText },
+  docCard: {
+    marginTop: 20, padding: 14, borderRadius: 10,
+    borderWidth: 1, borderColor: C.inputBorder, backgroundColor: '#f8fafc',
+  },
+  docTitle: { fontSize: 14, fontWeight: '800', color: C.title, marginBottom: 6 },
 
   /* Amenities */
   amenitiesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

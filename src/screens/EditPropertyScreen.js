@@ -35,6 +35,8 @@ export default function EditPropertyScreen({ property, onBack, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  const isSale = property.listingType === 'sale';
+
   const toggleAmenity = (amenity) => {
     setSelectedAmenities((prev) =>
       prev.includes(amenity)
@@ -77,7 +79,7 @@ export default function EditPropertyScreen({ property, onBack, onSuccess }) {
       Alert.alert('Missing images', 'Please keep or add at least one photo.');
       return;
     }
-    if (selectedAmenities.length === 0) {
+    if (!isSale && selectedAmenities.length === 0) {
       Alert.alert('Missing amenities', 'Please select at least one amenity.');
       return;
     }
@@ -225,7 +227,7 @@ export default function EditPropertyScreen({ property, onBack, onSuccess }) {
         ))}
       </ScrollView>
 
-      <Text style={styles.label}>Amenities *</Text>
+      <Text style={styles.label}>Amenities {!isSale && '*'}</Text>
       <View style={styles.amenitiesGrid}>
         {AMENITIES_LIST.map((amenity) => (
           <TouchableOpacity

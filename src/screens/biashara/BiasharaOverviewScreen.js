@@ -10,7 +10,7 @@ import { Spacing, BorderRadius, FontSize } from '../../constants/theme';
 import { StarIcon, StoreIcon } from './Icons';
 import Svg, { Path, Circle, Polyline } from 'react-native-svg';
 
-const ACCENT = '#fbbf24';
+const ACCENT = '#e11d48';
 
 /* ── Icons ─────────────────────────────────────────────────── */
 const EyeIcon = ({ color = '#94a3b8', size = 15 }) => (
@@ -40,8 +40,8 @@ const LocationIcon = ({ color = '#94a3b8', size = 12 }) => (
 
 /* ── Status helpers ─────────────────────────────────────────── */
 const STATUS_MAP = {
-  active:   { bg: '#22c55e18', border: '#22c55e40', text: '#22c55e', label: 'Live' },
-  approved: { bg: '#22c55e18', border: '#22c55e40', text: '#22c55e', label: 'Live' },
+  active:   { bg: '#1e3a5f18', border: '#1e3a5f40', text: '#1e3a5f', label: 'Live' },
+  approved: { bg: '#1e3a5f18', border: '#1e3a5f40', text: '#1e3a5f', label: 'Live' },
   pending:  { bg: ACCENT + '18', border: ACCENT + '40', text: ACCENT, label: 'Pending' },
   rejected: { bg: '#ef444418', border: '#ef444440', text: '#ef4444', label: 'Rejected' },
   archived: { bg: '#64748b18', border: '#64748b40', text: '#64748b', label: 'Archived' },
@@ -170,8 +170,8 @@ export default function BiasharaOverviewScreen({
               label="Businesses" value={businesses.length} color={ACCENT} colors={colors} />
             <StatCard icon={<EyeIcon color="#3b82f6" size={15} />}
               label="Total Views" value={totalViews} color="#3b82f6" colors={colors} />
-            <StatCard icon={<StarIcon color="#f59e0b" size={15} />}
-              label="Avg Rating" value={avgRating} color="#f59e0b" colors={colors} />
+            <StatCard icon={<StarIcon color="#1e3a5f" size={15} />}
+              label="Avg Rating" value={avgRating} color="#1e3a5f" colors={colors} />
             <StatCard icon={<MessageIcon color="#a78bfa" size={15} />}
               label="New Inquiries" value={pendingInquiries} color="#a78bfa" colors={colors} />
           </View>
@@ -255,7 +255,7 @@ export default function BiasharaOverviewScreen({
                       <Text style={[s.analyticLab, { color: colors.textMuted }]}> views</Text>
                     </View>
                     <View style={s.analyticItem}>
-                      <TrendingIcon color="#22c55e" size={12} />
+                      <TrendingIcon color="#1e3a5f" size={12} />
                       <Text style={[s.analyticVal, { color: colors.text }]}> {(a.contactClicks || 0) + (a.websiteClicks || 0)}</Text>
                       <Text style={[s.analyticLab, { color: colors.textMuted }]}> clicks</Text>
                     </View>
@@ -323,10 +323,10 @@ export default function BiasharaOverviewScreen({
                     </Text>
                   </View>
                   <View style={[s.inqStatus, {
-                    backgroundColor: inq.response ? '#22c55e18' : ACCENT + '18',
-                    borderColor: inq.response ? '#22c55e40' : ACCENT + '40',
+                    backgroundColor: inq.response ? '#1e3a5f18' : ACCENT + '18',
+                    borderColor: inq.response ? '#1e3a5f40' : ACCENT + '40',
                   }]}>
-                    <Text style={{ fontSize: 9, fontWeight: '800', color: inq.response ? '#22c55e' : ACCENT }}>
+                    <Text style={{ fontSize: 9, fontWeight: '800', color: inq.response ? '#1e3a5f' : ACCENT }}>
                       {inq.response ? 'REPLIED' : 'NEW'}
                     </Text>
                   </View>

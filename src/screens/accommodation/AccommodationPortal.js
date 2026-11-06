@@ -10,15 +10,16 @@ import AccommodationOverviewScreen from './AccommodationOverviewScreen';
 import AccommodationBookingsScreen from './AccommodationBookingsScreen';
 import AccommodationAccountScreen from './AccommodationAccountScreen';
 import AccommodationRegisterScreen from './AccommodationRegisterScreen';
+// AccommodationListingsScreen removed — listings now live inside AccommodationOverviewScreen
 import { HomeIcon, CalendarIcon, UserIcon } from './AccomIcons';
 
-const ACCENT = '#10b981';
+const ACCENT = '#e11d48';
 const API_BASE = 'https://axx-spaces-backend-1.onrender.com/api';
 
 const TABS = [
-  { key: 'overview',  label: 'Dashboard', Icon: HomeIcon     },
-  { key: 'bookings',  label: 'Bookings',  Icon: CalendarIcon },
-  { key: 'account',   label: 'Account',   Icon: UserIcon     },
+  { key: 'overview', label: 'Dashboard', Icon: HomeIcon },
+  { key: 'bookings', label: 'Bookings', Icon: CalendarIcon },
+  { key: 'account', label: 'Account', Icon: UserIcon },
 ];
 
 function BottomTabBar({ activeTab, setActiveTab, colors, insets }) {
@@ -54,7 +55,8 @@ function BottomTabBar({ activeTab, setActiveTab, colors, insets }) {
   );
 }
 
-export default function AccommodationPortal({ onBackToPortalSelector }) {
+// Removed useNavigation import – navigation prop is passed from parent
+export default function AccommodationPortal({ onBackToPortalSelector, navigation }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [checkingSession, setCheckingSession] = useState(true);
@@ -137,9 +139,11 @@ export default function AccommodationPortal({ onBackToPortalSelector }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {activeTab === 'overview' && <AccommodationOverviewScreen user={user} />}
+      {activeTab === 'overview' && (
+        <AccommodationOverviewScreen user={user} onOpenAccount={() => setActiveTab('account')} />
+      )}
       {activeTab === 'bookings' && <AccommodationBookingsScreen user={user} />}
-      {activeTab === 'account'  && (
+      {activeTab === 'account' && (
         <AccommodationAccountScreen
           user={user}
           onLogout={handleLogout}

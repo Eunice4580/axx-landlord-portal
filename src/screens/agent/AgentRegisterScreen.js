@@ -9,23 +9,23 @@ import { EyeIcon, EyeOffIcon } from './AgentIcons';
 
 /* ── Exact colors from AgentRegister.jsx on the website ────────────── */
 const C = {
-  bgGradientEnd:    '#fde68a',
+  bgGradientEnd:    '#bfdbfe',
   white:            '#ffffff',
-  logoAccent:       '#fbbf24',
+  logoAccent:       '#e11d48',
   logoWord:         '#1f2937',
   title:            '#1f2937',
   subtitle:         '#6b7280',
   label:            '#374151',
   inputBorder:      '#e5e7eb',
-  inputFocusBorder: '#fbbf24',
+  inputFocusBorder: '#e11d48',
   hint:             '#9ca3af',
-  btnBg:            '#fbbf24',
+  btnBg:            '#e11d48',
   btnText:          '#1f2937',
   errorBg:          '#fee2e2',
   errorText:        '#dc2626',
-  successBg:        '#dcfce7',
-  successText:      '#16a34a',
-  linkText:         '#fbbf24',
+  successBg:        '#dbeafe',
+  successText:      '#1e3a5f',
+  linkText:         '#e11d48',
   linkGray:         '#6b7280',
 };
 
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4,
   },
   countyItem:         { paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 0.5, borderBottomColor: C.inputBorder },
-  countyItemSelected: { backgroundColor: '#fffbeb' },
+  countyItemSelected: { backgroundColor: '#eff6ff' },
   countyItemText:     { fontSize: 14, color: C.title },
 
   button:     { backgroundColor: C.btnBg, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 4 },

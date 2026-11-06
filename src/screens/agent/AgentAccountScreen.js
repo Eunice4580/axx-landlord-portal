@@ -7,38 +7,68 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as SecureStore from 'expo-secure-store';
+import ImageCropModal from '../../components/ImageCropModal';
+import HelpCenterScreen from '../support/HelpCenterScreen';
+
+const AGENT_TIPS = [
+  {
+    id: 'ag1',
+    question: 'How do I upgrade my package?',
+    answer: 'Go to Account → Upgrade Package. Choose the plan that fits your needs. Higher plans unlock more listings and premium features.',
+  },
+  {
+    id: 'ag2',
+    question: 'How do I add a new listing?',
+    answer: 'From your Agent dashboard tap "Add Listing". Fill in the property details, set the price, upload photos and publish.',
+  },
+  {
+    id: 'ag3',
+    question: 'How do I generate a QR code for a listing?',
+    answer: 'Open a listing and tap "Generate QR Poster". You can download and print the poster to place at the property.',
+  },
+  {
+    id: 'ag4',
+    question: 'How many listings can I have?',
+    answer: 'The number of active listings depends on your package. Check Account → My Package to see your current limit and usage.',
+  },
+  {
+    id: 'ag5',
+    question: 'Why is my listing not showing to clients?',
+    answer: 'Make sure the listing status is Published and not Draft. Also confirm your account is active and your package has not expired.',
+  },
+];
 import { useTheme } from '../../context/ThemeContext';
 import { EyeIcon, EyeOffIcon, ArrowLeftIcon, CameraIcon } from './AgentIcons';
 
 /* ── Exact colors from AgentDashboard.jsx / AgentLogin.jsx ───────── */
 const C = {
-  rootBg:        '#f8f4f0',
-  white:         '#ffffff',
-  headerBorder:  '#e5e7eb',
-  logoAccent:    '#fbbf24',
-  logoWord:      '#1f2937',
-  title:         '#1f2937',
-  subtitle:      '#6b7280',
-  label:         '#374151',
-  cardBg:        '#ffffff',
-  cardBorder:    '#e5e7eb',
-  inputBorder:   '#e5e7eb',
-  inputFocus:    '#fbbf24',
+  rootBg: '#f8f4f0',
+  white: '#ffffff',
+  headerBorder: '#e5e7eb',
+  logoAccent: '#e11d48',
+  logoWord: '#1f2937',
+  title: '#1f2937',
+  subtitle: '#6b7280',
+  label: '#374151',
+  cardBg: '#ffffff',
+  cardBorder: '#e5e7eb',
+  inputBorder: '#e5e7eb',
+  inputFocus: '#e11d48',
   // Buttons
-  primaryBg:     '#fbbf24',
-  primaryText:   '#1f2937',
-  logoutBg:      '#fee2e2',
-  logoutText:    '#dc2626',
+  primaryBg: '#e11d48',
+  primaryText: '#ffffff',
+  logoutBg: '#fee2e2',
+  logoutText: '#dc2626',
   // Status
-  successBg:     '#dcfce7',
-  successText:   '#166534',
-  errorBg:       '#fee2e2',
-  errorText:     '#dc2626',
+  successBg: '#dbeafe',
+  successText: '#1e3a5f',
+  errorBg: '#fee2e2',
+  errorText: '#dc2626',
   // Info rows
-  infoLabel:     '#6b7280',
-  infoValue:     '#1f2937',
+  infoLabel: '#6b7280',
+  infoValue: '#1f2937',
   // Camera badge
-  cameraBadgeBg: '#fbbf24',
+  cameraBadgeBg: '#e11d48',
 };
 
 const API_BASE = 'https://axx-spaces-backend-1.onrender.com/api';
@@ -106,7 +136,7 @@ function ChangePasswordView({ onDone }) {
 
       {[
         { key: 'current', label: 'Current Password' },
-        { key: 'newPw',   label: 'New Password' },
+        { key: 'newPw', label: 'New Password' },
       ].map(f => (
         <View key={f.key} style={styles.field}>
           <Text style={styles.label}>{f.label}</Text>
@@ -167,11 +197,11 @@ function ChangePasswordView({ onDone }) {
 
 /* ── Edit Profile ────────────────────────────────────────────────── */
 function EditProfileView({ user, onDone, onProfileUpdated }) {
-  const [name, setName]   = useState(user?.name || '');
+  const [name, setName] = useState(user?.name || '');
   const [phone, setPhone] = useState(user?.agentProfile?.phone || user?.phone || '');
-  const [bio, setBio]     = useState(user?.agentProfile?.bio || '');
+  const [bio, setBio] = useState(user?.agentProfile?.bio || '');
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg]     = useState({ text: '', ok: false });
+  const [msg, setMsg] = useState({ text: '', ok: false });
   const [focused, setFocused] = useState({});
 
   const handleSave = async () => {
@@ -195,7 +225,7 @@ function EditProfileView({ user, onDone, onProfileUpdated }) {
   };
 
   const fields = [
-    { key: 'name',  label: 'Full Name',    value: name,  set: setName,  kb: 'default' },
+    { key: 'name', label: 'Full Name', value: name, set: setName, kb: 'default' },
     { key: 'phone', label: 'Phone Number', value: phone, set: setPhone, kb: 'phone-pad' },
   ];
 
@@ -254,12 +284,140 @@ function EditProfileView({ user, onDone, onProfileUpdated }) {
   );
 }
 
-/* ── Main Account Screen ─────────────────────────────────────────── */
+/* ── House Hunting Fee View ──────────────────────────────────────── */
+function HouseHuntingFeeView({ user, onDone }) {
+  const [fee, setFee] = useState(String(user?.agentProfile?.houseHuntingFee || ''));
+  const [terms, setTerms] = useState(user?.agentProfile?.houseHuntingFeeTerms || 'Per viewing trip');
+  const [offers, setOffers] = useState(user?.agentProfile?.offersHouseHunting !== false);
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState({ text: '', ok: false });
+
+  const PRESETS = [500, 1000, 1500, 2000, 2500, 3000];
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      const token = await SecureStore.getItemAsync('agent_token');
+      const res = await fetch(`${API_BASE}/agents/house-hunting-fee`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          houseHuntingFee: Number(fee) || 0,
+          houseHuntingFeeTerms: terms.trim(),
+          offersHouseHunting: offers,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save');
+      setMsg({ text: 'House hunting fee saved!', ok: true });
+      setTimeout(onDone, 1200);
+    } catch (err) {
+      setMsg({ text: err.message || 'Failed to save.', ok: false });
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <View>
+      <TouchableOpacity style={styles.backRow} onPress={onDone} activeOpacity={0.7}>
+        <ArrowLeftIcon color={C.subtitle} size={16} />
+        <Text style={[styles.backText, { color: C.logoAccent }]}>Back</Text>
+      </TouchableOpacity>
+      <Text style={styles.sectionTitle}>House Hunting Fee</Text>
+      <MsgBanner msg={msg} />
+
+      {/* Toggle */}
+      <View style={[styles.infoCard, { marginBottom: 16 }]}>
+        <TouchableOpacity
+          style={{ flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 }}
+          onPress={() => setOffers(v => !v)}
+          activeOpacity={0.8}
+        >
+          <View style={{
+            width: 24, height: 24, borderRadius: 6, borderWidth: 2,
+            borderColor: offers ? C.logoAccent : C.inputBorder,
+            backgroundColor: offers ? C.logoAccent : C.white,
+            justifyContent: 'center', alignItems: 'center',
+          }}>
+            {offers && <Text style={{ color: '#fff', fontSize: 14, fontWeight: '900' }}>✓</Text>}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: C.title }}>Offer House Hunting Services</Text>
+            <Text style={{ fontSize: 12, color: C.subtitle, marginTop: 2 }}>
+              When on, your fee is shown to tenants looking in your area.
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {/* Fee amount */}
+      <View style={styles.field}>
+        <Text style={styles.label}>Fee Amount (KES)</Text>
+        <TextInput
+          style={[styles.input, !offers && { backgroundColor: '#f3f4f6' }]}
+          value={fee}
+          onChangeText={setFee}
+          keyboardType="numeric"
+          placeholder="e.g. 1000"
+          placeholderTextColor="#9ca3af"
+          editable={offers}
+        />
+        {/* Quick presets */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+          {PRESETS.map(amt => (
+            <TouchableOpacity
+              key={amt}
+              onPress={() => offers && setFee(String(amt))}
+              style={{
+                paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6,
+                borderWidth: 1, borderColor: '#e5e7eb',
+                backgroundColor: Number(fee) === amt ? C.title : '#f3f4f6',
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={{ fontSize: 12, fontWeight: '700', color: Number(fee) === amt ? '#fff' : '#374151' }}>
+                KES {amt.toLocaleString()}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Terms */}
+      <View style={styles.field}>
+        <Text style={styles.label}>Fee Terms / Scope</Text>
+        <TextInput
+          style={[styles.input, !offers && { backgroundColor: '#f3f4f6' }]}
+          value={terms}
+          onChangeText={setTerms}
+          placeholder="e.g. Per viewing trip (up to 4 houses)"
+          placeholderTextColor="#9ca3af"
+          editable={offers}
+        />
+      </View>
+
+      <TouchableOpacity
+        style={[styles.primaryBtn, loading && { opacity: 0.5 }]}
+        onPress={handleSave}
+        disabled={loading}
+        activeOpacity={0.8}
+      >
+        {loading
+          ? <ActivityIndicator color={C.primaryText} />
+          : <Text style={styles.primaryBtnText}>Save Fee</Text>
+        }
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+
 export default function AgentAccountScreen({ user, onLogout, onProfileUpdated, onUpgradePackage }) {
+  const [showHelpCenter, setShowHelpCenter] = useState(false);
   const { isDark, toggleTheme } = useTheme();
-  const [view, setView]           = useState('main');
+  const [view, setView] = useState('main');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [localAvatar, setLocalAvatar]         = useState(null);
+  const [localAvatar, setLocalAvatar] = useState(null);
+  const [cropModal, setCropModal] = useState({ visible: false, uri: null, width: 0, height: 0 });
 
   const verified = user?.agentProfile?.verificationStatus === 'verified';
   const initials = user?.name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'AG';
@@ -270,27 +428,35 @@ export default function AgentAccountScreen({ user, onLogout, onProfileUpdated, o
     if (status !== 'granted') { Alert.alert('Permission required', 'Allow access to your photo library.'); return; }
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true, aspect: [1, 1], quality: 0.85,
+      quality: 1,
     });
-    if (!res.canceled && res.assets[0]) {
-      const uri = res.assets[0].uri;
-      setLocalAvatar(uri);
-      setUploadingAvatar(true);
-      try {
-        const token = await SecureStore.getItemAsync('agent_token');
-        const form = new FormData();
-        form.append('avatar', { uri, name: 'avatar.jpg', type: 'image/jpeg' });
-        const r = await fetch(`${API_BASE}/profile`, {
-          method: 'PATCH', headers: { Authorization: `Bearer ${token}` }, body: form,
-        });
-        if (r.ok) {
-          const d = await r.json();
-          if (d.data?.user?.profileImage) onProfileUpdated({ profileImage: d.data.user.profileImage });
-        }
-      } catch (err) { console.error('Avatar upload:', err); }
-      finally { setUploadingAvatar(false); }
+    if (!res.canceled && res.assets?.[0]) {
+      const { uri, width, height } = res.assets[0];
+      setCropModal({ visible: true, uri, width: width || 1000, height: height || 1000 });
     }
   };
+
+  const uploadAvatar = async (uri) => {
+    setLocalAvatar(uri);
+    setUploadingAvatar(true);
+    try {
+      const token = await SecureStore.getItemAsync('agent_token');
+      const form = new FormData();
+      form.append('avatar', { uri, name: 'avatar.jpg', type: 'image/jpeg' });
+      const r = await fetch(`${API_BASE}/profile`, {
+        method: 'PATCH', headers: { Authorization: `Bearer ${token}` }, body: form,
+      });
+      if (r.ok) {
+        const d = await r.json();
+        if (d.data?.user?.profileImage) onProfileUpdated({ profileImage: d.data.user.profileImage });
+      }
+    } catch (err) { console.error('Avatar upload:', err); }
+    finally { setUploadingAvatar(false); }
+  };
+
+  if (showHelpCenter) {
+    return <HelpCenterScreen navigation={{ goBack: () => setShowHelpCenter(false) }} tips={AGENT_TIPS} />;
+  }
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Log out of the Agent Portal?', [
@@ -322,6 +488,15 @@ export default function AgentAccountScreen({ user, onLogout, onProfileUpdated, o
         </KeyboardAvoidingView>
       );
     }
+    if (view === 'huntingFee') {
+      return (
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView contentContainerStyle={styles.container}>
+            <HouseHuntingFeeView user={user} onDone={() => setView('main')} />
+          </ScrollView>
+        </KeyboardAvoidingView>
+      );
+    }
     return (
       <ScrollView contentContainerStyle={styles.container}>
         {/* Profile card */}
@@ -347,16 +522,16 @@ export default function AgentAccountScreen({ user, onLogout, onProfileUpdated, o
             <Text style={styles.profileDetail}>{user?.email}</Text>
             {(user?.agentProfile?.county || user?.county) && (
               <Text style={styles.profileDetail}>
-                📍 {user.agentProfile?.county || user.county}
-              </Text>
+              {user.agentProfile?.county || user.county}
+            </Text>
             )}
             {/* Verification badge */}
             <View style={[
               styles.verifiedBadge,
-              { backgroundColor: verified ? C.successBg : '#fef3c7' }
+              { backgroundColor: verified ? C.successBg : '#dbeafe' }
             ]}>
-              <Text style={{ color: verified ? C.successText : '#92400e', fontSize: 11, fontWeight: '700' }}>
-                {verified ? '✓ Verified Agent' : '⏳ Pending Verification'}
+              <Text style={{ color: verified ? C.successText : '#1e3a5f', fontSize: 11, fontWeight: '700' }}>
+                {verified ? '✓ Verified Agent' : 'Pending Verification'}
               </Text>
             </View>
           </View>
@@ -395,8 +570,18 @@ export default function AgentAccountScreen({ user, onLogout, onProfileUpdated, o
             <Text style={{ color: C.logoAccent, fontSize: 16 }}>›</Text>
           </TouchableOpacity>
 
+          <TouchableOpacity style={styles.menuRow} onPress={() => setView('huntingFee')} activeOpacity={0.7}>
+            <Text style={styles.menuLabel}>House Hunting Fee</Text>
+            <Text style={{ color: C.logoAccent, fontSize: 16 }}>›</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity style={[styles.menuRow, { borderBottomWidth: 0 }]} onPress={toggleTheme} activeOpacity={0.7}>
-            <Text style={styles.menuLabel}>{isDark ? '☀️ Light Mode' : '🌙 Dark Mode'}</Text>
+            <Text style={styles.menuLabel}>{isDark ? 'Light Mode' : 'Dark Mode'}</Text>
+            <Text style={{ color: C.logoAccent, fontSize: 16 }}>›</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.menuRow, { borderBottomWidth: 0 }]} onPress={() => setShowHelpCenter(true)} activeOpacity={0.7}>
+            <Text style={styles.menuLabel}>Help Center</Text>
             <Text style={{ color: C.logoAccent, fontSize: 16 }}>›</Text>
           </TouchableOpacity>
         </View>
@@ -431,6 +616,19 @@ export default function AgentAccountScreen({ user, onLogout, onProfileUpdated, o
         <Text style={styles.headerTitle}>My Account</Text>
       </View>
       {renderView()}
+
+      {/* Crop modal */}
+      <ImageCropModal
+        visible={cropModal.visible}
+        imageUri={cropModal.uri}
+        imageWidth={cropModal.width}
+        imageHeight={cropModal.height}
+        onDone={(uri) => {
+          setCropModal({ visible: false, uri: null, width: 0, height: 0 });
+          uploadAvatar(uri);
+        }}
+        onCancel={() => setCropModal({ visible: false, uri: null, width: 0, height: 0 })}
+      />
     </SafeAreaView>
   );
 }
@@ -448,12 +646,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  logo:       { flexDirection: 'row', alignItems: 'center' },
+  logo: { flexDirection: 'row', alignItems: 'center' },
   logoAccent: { fontSize: 20, fontWeight: '900', color: C.logoAccent },
-  logoWord:   { fontSize: 20, fontWeight: '900', color: C.logoWord },
-  headerTitle:{ fontSize: 18, fontWeight: '700', color: C.title },
+  logoWord: { fontSize: 20, fontWeight: '900', color: C.logoWord },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: C.title },
 
-  container:  { padding: 24, paddingBottom: 40 },
+  container: { padding: 24, paddingBottom: 40 },
 
   /* Profile section */
   profileSection: {
@@ -472,7 +670,7 @@ const styles = StyleSheet.create({
     gap: 16,
     alignItems: 'flex-start',
   },
-  avatarWrap:  { position: 'relative' },
+  avatarWrap: { position: 'relative' },
   profileImg: {
     width: 80, height: 80, borderRadius: 40,
     backgroundColor: C.logoAccent,
@@ -488,10 +686,10 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 4,
     elevation: 2,
   },
-  profileInfo:  { flex: 1 },
-  profileName:  { fontSize: 20, fontWeight: '800', color: C.title, marginBottom: 4 },
-  profileDetail:{ fontSize: 14, color: C.subtitle, marginBottom: 4 },
-  verifiedBadge:{
+  profileInfo: { flex: 1 },
+  profileName: { fontSize: 20, fontWeight: '800', color: C.title, marginBottom: 4 },
+  profileDetail: { fontSize: 14, color: C.subtitle, marginBottom: 4 },
+  verifiedBadge: {
     paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12,
     alignSelf: 'flex-start', marginTop: 6,
   },
@@ -532,13 +730,13 @@ const styles = StyleSheet.create({
 
   /* Upgrade Package button */
   upgradeBtn: {
-    backgroundColor: '#fbbf24',
+    backgroundColor: '#e11d48',
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
     marginTop: 8,
   },
-  upgradeBtnText: { color: '#0f172a', fontSize: 13, fontWeight: '800' },
+  upgradeBtnText: { color: '#ffffff', fontSize: 13, fontWeight: '800' },
 
   /* Logout — matches website logoutBtn */
   logoutBtn: {
@@ -554,17 +752,17 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 22, fontWeight: '800', color: C.title, marginBottom: 20 },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 20 },
   backText: { fontSize: 13, fontWeight: '600' },
-  field:  { marginBottom: 20 },
-  label:  { fontSize: 13, fontWeight: '700', color: C.label, marginBottom: 6 },
+  field: { marginBottom: 20 },
+  label: { fontSize: 13, fontWeight: '700', color: C.label, marginBottom: 6 },
   input: {
     padding: 12, borderWidth: 2, borderColor: C.inputBorder,
     borderRadius: 10, fontSize: 14, color: C.title, backgroundColor: C.white,
   },
   inputFocused: { borderColor: C.inputFocus },
-  textArea:     { minHeight: 100, textAlignVertical: 'top' },
-  pwRow:        { position: 'relative' },
-  pwInput:      { paddingRight: 48 },
-  pwToggle:     { position: 'absolute', right: 14, top: 13, padding: 2 },
+  textArea: { minHeight: 100, textAlignVertical: 'top' },
+  pwRow: { position: 'relative' },
+  pwInput: { paddingRight: 48 },
+  pwToggle: { position: 'absolute', right: 14, top: 13, padding: 2 },
 
   primaryBtn: {
     backgroundColor: C.primaryBg, borderRadius: 10,

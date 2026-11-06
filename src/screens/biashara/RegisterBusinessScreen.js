@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import * as ImageManipulator from 'expo-image-manipulator';
 import LocateButton from '../../components/LocateButton';
+import ImageCropModal from '../../components/ImageCropModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { biasharaBusinessAPI } from '../../services/api';
@@ -12,7 +13,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { Spacing, BorderRadius, FontSize } from '../../constants/theme';
 import { ArrowLeftIcon, CheckIcon, AlertIcon } from './Icons';
 
-const ACCENT = '#fbbf24';
+const ACCENT = '#e11d48';
 
 /* ── Complete categories from Business.js model ─────────────── */
 const CATEGORIES = [
@@ -49,8 +50,8 @@ function MsgBanner({ msg }) {
   const ok = msg.isSuccess;
   return (
     <View style={[s.msgBanner, ok ? s.msgOk : s.msgErr]}>
-      {ok ? <CheckIcon color="#22c55e" size={14} /> : <AlertIcon color="#ef4444" size={14} />}
-      <Text style={[s.msgText, { color: ok ? '#22c55e' : '#ef4444' }]}> {msg.text}</Text>
+      {ok ? <CheckIcon color="#1e3a5f" size={14} /> : <AlertIcon color="#ef4444" size={14} />}
+      <Text style={[s.msgText, { color: ok ? '#1e3a5f' : '#ef4444' }]}> {msg.text}</Text>
     </View>
   );
 }
@@ -213,6 +214,7 @@ export default function RegisterBusinessScreen({ user, business, onDone, onBack 
   // Media
   const [logo, setLogo]       = useState(null);   // { uri, url? }
   const [photos, setPhotos]   = useState([]);     // [{ uri, url? }]
+  const [logoCropModal, setLogoCropModal] = useState({ visible: false, uri: null, width: 0, height: 0 });
 
   // Pre-fill when editing
   useEffect(() => {
@@ -253,9 +255,12 @@ export default function RegisterBusinessScreen({ user, business, onDone, onBack 
     if (!perm.granted) { setMsg({ text: 'Camera roll permission needed.', isSuccess: false }); return; }
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true, aspect: [1, 1], quality: 0.8,
+      quality: 1,
     });
-    if (!res.canceled && res.assets?.[0]) setLogo({ uri: await shrinkImage(res.assets[0].uri, res.assets[0].width, 1000) });
+    if (!res.canceled && res.assets?.[0]) {
+      const { uri, width, height } = res.assets[0];
+      setLogoCropModal({ visible: true, uri, width: width || 1000, height: height || 1000 });
+    }
   };
 
   const pickPhotos = async () => {
@@ -534,6 +539,20 @@ export default function RegisterBusinessScreen({ user, business, onDone, onBack 
           <View style={{ height: 40 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <ImageCropModal
+        visible={logoCropModal.visible}
+        imageUri={logoCropModal.uri}
+        imageWidth={logoCropModal.width}
+        imageHeight={logoCropModal.height}
+        onDone={async (uri) => {
+          setLogoCropModal({ visible: false, uri: null, width: 0, height: 0 });
+          // Shrink after user crops to their liking
+          const w = logoCropModal.width || 1000;
+          setLogo({ uri: await shrinkImage(uri, w, 1000) });
+        }}
+        onCancel={() => setLogoCropModal({ visible: false, uri: null, width: 0, height: 0 })}
+      />
     </SafeAreaView>
   );
 }
@@ -595,7 +614,7 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 10,
     padding: 12, marginBottom: 14,
   },
-  msgOk: { backgroundColor: '#22c55e12', borderColor: '#22c55e35' },
+  msgOk: { backgroundColor: '#1e3a5f12', borderColor: '#1e3a5f35' },
   msgErr: { backgroundColor: '#ef444412', borderColor: '#ef444435' },
   msgText: { fontSize: FontSize.sm, fontWeight: '600', flex: 1 },
 

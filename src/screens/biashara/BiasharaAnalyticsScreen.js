@@ -8,7 +8,7 @@ import { biasharaBusinessAPI } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import Svg, { Path, Circle, Polyline, Rect, Line, G, Text as SvgText } from 'react-native-svg';
 
-const ACCENT = '#fbbf24';
+const ACCENT = '#e11d48';
 const { width: SCREEN_W } = Dimensions.get('window');
 
 /* ── Icons ──────────────────────────────────────────────────── */
@@ -17,7 +17,7 @@ const EyeIcon         = ({ c = '#3b82f6',  s = 16 }) => (
     <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><Circle cx="12" cy="12" r="3" />
   </Svg>
 );
-const PhoneIcon       = ({ c = '#10b981', s = 16 }) => (
+const PhoneIcon       = ({ c = '#1e3a5f', s = 16 }) => (
   <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.59 3.47 2 2 0 0 1 3.56 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81A16 16 0 0 0 16 16.92l.81-.81a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 23.73 18z" />
   </Svg>
@@ -276,10 +276,10 @@ export default function BiasharaAnalyticsScreen({ businesses, onBack }) {
                   sub={`${dailyViews.length > 0 ? '+' + dailyViews.reduce((s, d) => s + d.count, 0) : 0} this period`}
                 />
                 <StatCard
-                  icon={<PhoneIcon c="#10b981" />}
+                  icon={<PhoneIcon c="#1e3a5f" />}
                   label="Contact Clicks"
                   value={(a.contactClicks || 0).toLocaleString()}
-                  color="#10b981"
+                  color="#1e3a5f"
                   colors={colors}
                 />
                 <StatCard
@@ -349,7 +349,7 @@ export default function BiasharaAnalyticsScreen({ businesses, onBack }) {
               <Text style={[s.sectionLabel, { color: ACCENT }]}>ENGAGEMENT BREAKDOWN</Text>
               <View style={[s.breakdownCard, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
                 {[
-                  { label: 'Contact Clicks', value: a.contactClicks || 0, color: '#10b981', total: totalClicks },
+                  { label: 'Contact Clicks', value: a.contactClicks || 0, color: '#1e3a5f', total: totalClicks },
                   { label: 'Website Clicks', value: a.websiteClicks || 0, color: '#8b5cf6', total: totalClicks },
                   { label: 'Map Clicks',     value: a.mapClicks || 0,     color: '#f97316', total: totalClicks },
                 ].map(item => {
@@ -398,10 +398,10 @@ export default function BiasharaAnalyticsScreen({ businesses, onBack }) {
                         </Text>
                       </View>
                       <View style={[s.inqBadge, {
-                        backgroundColor: inq.response ? '#22c55e18' : ACCENT + '18',
-                        borderColor: inq.response ? '#22c55e40' : ACCENT + '40',
+                        backgroundColor: inq.response ? '#1e3a5f18' : ACCENT + '18',
+                        borderColor: inq.response ? '#1e3a5f40' : ACCENT + '40',
                       }]}>
-                        <Text style={[s.inqBadgeText, { color: inq.response ? '#22c55e' : ACCENT }]}>
+                        <Text style={[s.inqBadgeText, { color: inq.response ? '#1e3a5f' : ACCENT }]}>
                           {inq.response ? 'Replied' : 'Pending'}
                         </Text>
                       </View>

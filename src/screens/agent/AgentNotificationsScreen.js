@@ -42,12 +42,12 @@ function getMessage(n) {
 
 function getColor(type) {
   switch (type) {
-    case 'package_approved':  return '#10b981'; // green
+    case 'package_approved':  return '#1e3a5f'; // green
     case 'package_rejected':  return '#ef4444'; // red
     case 'property_booking':
-    case 'booking':           return '#22c55e';
+    case 'booking':           return '#1e3a5f';
     case 'material_purchase':
-    case 'payment':           return '#fbbf24';
+    case 'payment':           return '#e11d48';
     case 'tourism_booking':   return '#3b82f6';
     case 'boost':             return '#f97316';
     case 'subscription':      return '#8b5cf6';

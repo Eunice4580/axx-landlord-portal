@@ -18,6 +18,7 @@ import { useTheme } from '../context/ThemeContext';
 import ChangePasswordScreen from './ChangePasswordScreen';
 import ChangeEmailScreen from './ChangeEmailScreen';
 import ChangeContactScreen from './ChangeContactScreen';
+import WaitlistScreen from './WaitlistScreen';
 import { Switch } from 'react-native';
 
 export default function CaretakerDashboardScreen({ user, onLogout }) {
@@ -29,6 +30,8 @@ export default function CaretakerDashboardScreen({ user, onLogout }) {
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showChangeEmail, setShowChangeEmail] = useState(false);
   const [showChangeContact, setShowChangeContact] = useState(false);
+  const [showWaitlist, setShowWaitlist] = useState(false);
+  const [waitlistPropertyId, setWaitlistPropertyId] = useState(null);
   const [localUser, setLocalUser] = useState(user);
   const { colors, isDark, toggleTheme } = useTheme();
   const styles = getStyles(colors);
@@ -57,6 +60,16 @@ export default function CaretakerDashboardScreen({ user, onLogout }) {
       Alert.alert('Failed', error.message || 'Could not update unit status.');
     }
   };
+
+  if (showWaitlist) {
+    return (
+      <WaitlistScreen
+        onBack={() => { setShowWaitlist(false); setWaitlistPropertyId(null); }}
+        mode="caretaker"
+        propertyId={waitlistPropertyId}
+      />
+    );
+  }
 
   if (showChangePassword) {
     return <ChangePasswordScreen onBack={() => setShowChangePassword(false)} />;
@@ -116,6 +129,12 @@ export default function CaretakerDashboardScreen({ user, onLogout }) {
               />
             </View>
           </View>
+        <TouchableOpacity
+            style={[styles.logoutBtn, { marginTop: Spacing.four, alignItems: 'center', paddingVertical: 12 }]}
+            onPress={onLogout}
+          >
+            <Text style={styles.logoutBtnText}>Log Out</Text>
+          </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
     );
@@ -181,6 +200,18 @@ export default function CaretakerDashboardScreen({ user, onLogout }) {
               <Text style={styles.actionBtnOutlineText}>Free Unit</Text>
             </TouchableOpacity>
           </View>
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#1e3a8a',
+              borderRadius: 10,
+              paddingVertical: 12,
+              alignItems: 'center',
+              marginTop: 8,
+            }}
+            onPress={() => { setWaitlistPropertyId(item._id); setShowWaitlist(true); }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>View Waitlist</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -218,16 +249,10 @@ export default function CaretakerDashboardScreen({ user, onLogout }) {
                   {showMenu && (
                     <View style={styles.dropdown}>
                       <TouchableOpacity
-                        style={styles.dropdownItem}
+                        style={[styles.dropdownItem, { borderBottomWidth: 0 }]}
                         onPress={() => { setShowMenu(false); setShowSettings(true); }}
                       >
                         <Text style={styles.dropdownItemText}>Settings</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.dropdownItem, { borderBottomWidth: 0 }]}
-                        onPress={() => { setShowMenu(false); onLogout(); }}
-                      >
-                        <Text style={[styles.dropdownItemText, { color: colors.danger }]}>Log Out</Text>
                       </TouchableOpacity>
                     </View>
                   )}

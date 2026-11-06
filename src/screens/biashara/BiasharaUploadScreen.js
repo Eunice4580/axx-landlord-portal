@@ -10,7 +10,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { Spacing, BorderRadius, FontSize } from '../../constants/theme';
 import { CheckIcon, AlertIcon } from './Icons';
 
-const ACCENT = '#fbbf24';
+const ACCENT = '#e11d48';
 const API_BASE = 'https://axx-spaces-backend-1.onrender.com/api';
 
 const CATEGORIES = [
@@ -199,7 +199,7 @@ export default function BiasharaUploadScreen({ onUploadSuccess }) {
         {msg.text ? (
           <View style={[styles.msgBox, msg.isSuccess ? styles.msgSuccess : styles.msgError]}>
             {msg.isSuccess
-              ? <CheckIcon color="#22c55e" size={15} />
+              ? <CheckIcon color="#1e3a5f" size={15} />
               : <AlertIcon color="#ef4444" size={15} />}
             <Text style={styles.msgText}> {msg.text}</Text>
           </View>

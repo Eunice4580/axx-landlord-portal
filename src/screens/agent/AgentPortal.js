@@ -8,9 +8,9 @@ const C = {
   rootBg:      '#f8f4f0',
   white:       '#ffffff',
   tabBorder:   '#e5e7eb',
-  tabActive:   '#fbbf24',
+  tabActive:   '#e11d48',
   tabInactive: '#6b7280',
-  logoAccent:  '#fbbf24',
+  logoAccent:  '#e11d48',
 };
 
 const API_BASE = 'https://axx-spaces-backend-1.onrender.com/api';
@@ -37,6 +37,8 @@ import AgentUploadScreen          from './AgentUploadScreen';
 import AgentAccountScreen         from './AgentAccountScreen';
 import AgentNotificationsScreen   from './AgentNotificationsScreen';
 import AgentPackageScreen         from './AgentPackageScreen';
+import AgentQRPosterScreen        from './AgentQRPosterScreen';
+import RegisterAccommodationScreen from '../accommodation/RegisterAccommodationScreen';
 
 const TABS = [
   { key: 'overview', label: 'Dashboard', Icon: HomeIcon },
@@ -48,8 +50,11 @@ export default function AgentPortal({ onBackToPortalSelector }) {
   const [checkingSession, setCheckingSession] = useState(true);
   const [user, setUser]           = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
-  // 'login' | 'register' | 'main' | 'upload' | 'notifications' | 'package'
+  // 'login' | 'register' | 'main' | 'upload' | 'edit' | 'qrPoster' | 'notifications' | 'package'
   const [screen, setScreen]       = useState('login');
+  const [editProperty, setEditProperty]   = useState(null); // house being edited
+  const [accEditTarget, setAccEditTarget] = useState(null); // accommodation being edited
+  const [qrPosterTarget, setQrPosterTarget] = useState(null); // house for QR (null = agent-wide)
 
   useEffect(() => {
     (async () => {
@@ -123,6 +128,40 @@ export default function AgentPortal({ onBackToPortalSelector }) {
     );
   }
 
+  /* ── Edit screen (no tab bar) ───────────────────────────── */
+  if (screen === 'edit') {
+    return (
+      <AgentUploadScreen
+        editProperty={editProperty}
+        onBack={() => { setEditProperty(null); setScreen('main'); }}
+        onSuccess={() => { setEditProperty(null); setScreen('main'); }}
+      />
+    );
+  }
+
+  /* ── Accommodation create/edit (no tab bar) ─────────────── */
+  if (screen === 'accommodationNew' || screen === 'accommodationEdit') {
+    return (
+      <RegisterAccommodationScreen
+        itemToEdit={screen === 'accommodationEdit' ? accEditTarget : null}
+        tokenKey="agent_token"
+        onBack={() => { setAccEditTarget(null); setScreen('main'); }}
+        onSuccess={() => { setAccEditTarget(null); setScreen('main'); }}
+      />
+    );
+  }
+
+  /* ── QR Poster screen (no tab bar) ──────────────────────── */
+  if (screen === 'qrPoster') {
+    return (
+      <AgentQRPosterScreen
+        house={qrPosterTarget}
+        user={user}
+        onBack={() => { setQrPosterTarget(null); setScreen('main'); }}
+      />
+    );
+  }
+
   /* ── Notifications screen (no tab bar) ──────────────────── */
   if (screen === 'notifications') {
     return (
@@ -150,6 +189,11 @@ export default function AgentPortal({ onBackToPortalSelector }) {
           user={user}
           onUpload={() => setScreen('upload')}
           onNotifications={() => setScreen('notifications')}
+          onEdit={(house) => { setEditProperty(house); setScreen('edit'); }}
+          onQRPoster={(house) => { setQrPosterTarget(house); setScreen('qrPoster'); }}
+          onPostAccommodation={() => { setAccEditTarget(null); setScreen('accommodationNew'); }}
+          onEditAccommodation={(acc) => { setAccEditTarget(acc); setScreen('accommodationEdit'); }}
+          onGoToAccount={() => setActiveTab('account')}
         />
       )}
       {activeTab === 'account' && (

@@ -46,7 +46,7 @@ export const LogoutIcon = ({ color = '#ef4444', size = 18 }) => (
   </Svg>
 );
 
-export const CheckIcon = ({ color = '#22c55e', size = 15 }) => (
+export const CheckIcon = ({ color = '#1e3a5f', size = 15 }) => (
   <Svg {...d(size, color, 2.5)} viewBox="0 0 24 24">
     <Polyline points="20 6 9 17 4 12" />
   </Svg>
@@ -74,14 +74,14 @@ export const EyeOffIcon = ({ color = '#94a3b8', size = 17 }) => (
   </Svg>
 );
 
-export const ShieldCheckIcon = ({ color = '#22c55e', size = 14 }) => (
+export const ShieldCheckIcon = ({ color = '#1e3a5f', size = 14 }) => (
   <Svg {...d(size, color)} viewBox="0 0 24 24">
     <Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
     <Polyline points="9 12 11 14 15 10" />
   </Svg>
 );
 
-export const EditIcon = ({ color = '#fbbf24', size = 16 }) => (
+export const EditIcon = ({ color = '#e11d48', size = 16 }) => (
   <Svg {...d(size, color)} viewBox="0 0 24 24">
     <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
     <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
@@ -130,14 +130,14 @@ export const ChevronRightIcon = ({ color = '#94a3b8', size = 16 }) => (
   </Svg>
 );
 
-export const CameraIcon = ({ color = '#fbbf24', size = 18 }) => (
+export const CameraIcon = ({ color = '#e11d48', size = 18 }) => (
   <Svg {...d(size, color)} viewBox="0 0 24 24">
     <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
     <Circle cx="12" cy="13" r="4" />
   </Svg>
 );
 
-export const SunIcon = ({ color = '#fbbf24', size = 16 }) => (
+export const SunIcon = ({ color = '#e11d48', size = 16 }) => (
   <Svg {...d(size, color)} viewBox="0 0 24 24">
     <Circle cx="12" cy="12" r="5" />
     <Line x1="12" y1="1" x2="12" y2="3" />
@@ -151,13 +151,13 @@ export const SunIcon = ({ color = '#fbbf24', size = 16 }) => (
   </Svg>
 );
 
-export const MoonIcon = ({ color = '#fbbf24', size = 16 }) => (
+export const MoonIcon = ({ color = '#e11d48', size = 16 }) => (
   <Svg {...d(size, color)} viewBox="0 0 24 24">
     <Path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
   </Svg>
 );
 
-export const StarIcon = ({ color = '#fbbf24', size = 14, filled = false }) => (
+export const StarIcon = ({ color = '#e11d48', size = 14, filled = false }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24"
     fill={filled ? color : 'none'} stroke={color} strokeWidth="1.8"
     strokeLinecap="round" strokeLinejoin="round">

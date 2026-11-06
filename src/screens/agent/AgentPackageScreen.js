@@ -16,8 +16,8 @@ const C = {
   border:  'rgba(255,255,255,0.08)',
   text:    '#f1f5f9',
   muted:   '#94a3b8',
-  accent:  '#fbbf24',
-  green:   '#10b981',
+  accent:  '#e11d48',
+  green:   '#1e3a5f',
   red:     '#ef4444',
 };
 

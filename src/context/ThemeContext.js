@@ -8,7 +8,7 @@ const DarkColors = {
 
   primary: '#e11d48',       // crimson red
   primaryDark: '#be123c',
-  accent: '#fbbf24',
+  accent: '#1e3a5f',
 
   text: '#f1f5f9',
   textSecondary: '#94a3b8',
@@ -17,9 +17,9 @@ const DarkColors = {
   border: '#334155',
   borderLight: '#253347',
 
-  success: '#22c55e',
+  success: '#1e3a5f',
   danger: '#ef4444',
-  warning: '#f59e0b',
+  warning: '#1e3a5f',
   info: '#3b82f6',
 
   isDark: true,
@@ -33,7 +33,7 @@ const LightColors = {
 
   primary: '#e11d48',
   primaryDark: '#be123c',
-  accent: '#f59e0b',
+  accent: '#1e3a5f',
 
   text: '#0f172a',
   textSecondary: '#475569',
@@ -42,9 +42,9 @@ const LightColors = {
   border: '#e2e8f0',
   borderLight: '#f1f5f9',
 
-  success: '#16a34a',
+  success: '#1e3a5f',
   danger: '#dc2626',
-  warning: '#d97706',
+  warning: '#1e3a5f',
   info: '#2563eb',
 
   isDark: false,

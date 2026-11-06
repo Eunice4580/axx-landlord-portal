@@ -9,7 +9,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { Spacing, BorderRadius, FontSize } from '../../constants/theme';
 import { ArrowLeftIcon, EyeIcon, EyeOffIcon, CheckIcon, AlertIcon, HomeIcon } from './AccomIcons';
 
-const ACCENT = '#10b981';   // emerald green for accommodation
+const ACCENT = '#e11d48';   // emerald green for accommodation
 const API_BASE = 'https://axx-spaces-backend-1.onrender.com/api';
 
 async function apiPost(path, body) {
@@ -90,7 +90,7 @@ export default function AccommodationLoginScreen({ onLoginSuccess, onBack, onCre
             </View>
             {msg.text ? (
               <View style={[s.msgBox, msg.ok ? s.msgOk : s.msgErr]}>
-                {msg.ok ? <CheckIcon color="#22c55e" size={14} /> : <AlertIcon color="#ef4444" size={14} />}
+                {msg.ok ? <CheckIcon color="#1e3a5f" size={14} /> : <AlertIcon color="#ef4444" size={14} />}
                 <Text style={s.msgText}> {msg.text}</Text>
               </View>
             ) : null}
@@ -126,7 +126,7 @@ export default function AccommodationLoginScreen({ onLoginSuccess, onBack, onCre
 
           {msg.text ? (
             <View style={[s.msgBox, msg.ok ? s.msgOk : s.msgErr]}>
-              {msg.ok ? <CheckIcon color="#22c55e" size={14} /> : <AlertIcon color="#ef4444" size={14} />}
+              {msg.ok ? <CheckIcon color="#1e3a5f" size={14} /> : <AlertIcon color="#ef4444" size={14} />}
               <Text style={s.msgText}> {msg.text}</Text>
             </View>
           ) : null}

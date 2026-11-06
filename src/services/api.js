@@ -101,7 +101,7 @@ export const caretakerAPI = {
   getMyAssignedProperties: () => apiCall('/caretaker/my-properties'),
 };
 
-export const createPropertyWithImages = async (formDataFields, imageUris) => {
+export const createPropertyWithImages = async (formDataFields, imageUris, videoAssets = []) => {
   const token = await (await import('expo-secure-store')).getItemAsync('token');
   const form = new FormData();
 
@@ -114,6 +114,16 @@ export const createPropertyWithImages = async (formDataFields, imageUris) => {
       uri,
       name: `photo_${index}.jpg`,
       type: 'image/jpeg',
+    });
+  });
+
+  videoAssets.forEach((asset, index) => {
+    const uri = asset.uri;
+    const ext = uri.split('.').pop() || 'mp4';
+    form.append('videos', {
+      uri,
+      name: asset.fileName || `walkthrough_${Date.now()}_${index}.${ext}`,
+      type: asset.mimeType || 'video/mp4',
     });
   });
 
@@ -155,6 +165,42 @@ export const qrStatsAPI = {
   getStats: (propertyId) => apiCall(`/properties/${propertyId}/qr-stats`),
 };
 
+// ── Landlord performance analytics ─────────────────────────────────────────────
+export const analyticsAPI = {
+  getSummary: (userType = 'landlord', period = '7d') =>
+    apiCall(`/analytics/summary?userType=${userType}&period=${period}`),
+};
+
+// ── Agent requests (landlords / hosts receive these) ───────────────────────────
+export const agentRequestsAPI = {
+  getProviderRequests: () => apiCall('/agent-requests/provider'),
+  accept: (requestId) =>
+    apiCall(`/agent-requests/${requestId}/accept`, { method: 'PUT' }),
+  reject: (requestId, response) =>
+    apiCall(`/agent-requests/${requestId}/reject`, {
+      method: 'PUT',
+      body: JSON.stringify({ response }),
+    }),
+};
+
+// ── Messages / notification inbox ─────────────────────────────────────────────
+export const notificationsAPI = {
+  getMy: () => apiCall('/notifications/my'),
+  markRead: (id) => apiCall(`/notifications/${id}/read`, { method: 'PUT' }),
+};
+
+// ── Waitlist API ───────────────────────────────────────────────────────────────
+export const waitlistAPI = {
+  // Landlord: get all waitlist entries across all their properties (FIFO ordered)
+  getAllForLandlord: () => apiCall('/waitlist/landlord/all'),
+  // Landlord: get waitlist for a specific property
+  getForProperty: (propertyId) => apiCall(`/waitlist/${propertyId}`),
+  // Landlord: send "unit available" email + WhatsApp notification
+  notify: (entryId) => apiCall(`/waitlist/${entryId}/notify`, { method: 'POST' }),
+  // Landlord: remove a person from waitlist
+  remove: (entryId) => apiCall(`/waitlist/${entryId}`, { method: 'DELETE' }),
+};
+
 export const updatePropertyWithImages = async (propertyId, formDataFields, newImageUris, remainingImageUrls) => {
   const token = await (await import('expo-secure-store')).getItemAsync('token');
   const form = new FormData();
@@ -193,6 +239,38 @@ export const updatePropertyWithImages = async (propertyId, formDataFields, newIm
 
     xhr.onerror = () => reject(new Error('Network error while updating'));
 
+    xhr.send(form);
+  });
+};
+
+export const uploadOwnershipDocument = async (asset, tokenKey = 'token') => {
+  const token = await (await import('expo-secure-store')).getItemAsync(tokenKey);
+  const form = new FormData();
+  form.append('document', {
+    uri: asset.uri,
+    name: asset.fileName || asset.name || `ownership_${Date.now()}.pdf`,
+    type: asset.mimeType || asset.type || 'application/octet-stream',
+  });
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_URL}/uploads/ownership-document`);
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+    xhr.onload = () => {
+      try {
+        const data = JSON.parse(xhr.responseText);
+        if (xhr.status >= 200 && xhr.status < 300 && data.url) {
+          resolve(data.url);
+        } else {
+          reject(new Error(data.error || 'Failed to upload ownership document'));
+        }
+      } catch {
+        reject(new Error('Failed to parse document upload response'));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Network error while uploading document'));
     xhr.send(form);
   });
 };
@@ -264,7 +342,10 @@ const apiCallBiashara = async (endpoint, options = {}) => {
     clearTimeout(timeoutId);
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.details || data.error || data.message || `Request failed (${response.status})`);
+      const err = new Error(data.details || data.error || data.message || `Request failed (${response.status})`);
+      err.status = response.status;
+      err.data = data;
+      throw err;
     }
     return data;
   } catch (error) {
@@ -280,20 +361,37 @@ const apiCallBiashara = async (endpoint, options = {}) => {
   }
 };
 
-// AxxBiashara Auth — business owners log in via the standard /auth/login.
-// They are stored with role: 'user' in the DB (same as the website's BusinessLogin.jsx).
-// Account creation (signup) is done on the website only; the app is sign-in only.
+// AxxBiashara Auth — business owners sign in through the same /auth/login as the
+// website's business portal. The backend isolates portal roles, so this must ask
+// for role: 'business' exactly like BusinessLogin.jsx does.
 export const biasharaAuthAPI = {
-  login: (email, password) =>
-    apiCallBiashara('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password, role: 'user' }),
-      useAuth: false,
-    }),
+  login: async (email, password) => {
+    try {
+      return await apiCallBiashara('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password, role: 'business' }),
+        useAuth: false,
+      });
+    } catch (error) {
+      // Accounts created by older app builds were stored as Member/User; keep
+      // those usable in the app while new accounts are created as Business.
+      if (
+        error?.data?.code === 'ROLE_MISMATCH' &&
+        ['user', 'member', 'guest'].includes(error.data.actualRole)
+      ) {
+        return apiCallBiashara('/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ email, password, role: 'user' }),
+          useAuth: false,
+        });
+      }
+      throw error;
+    }
+  },
   forgotPassword: (email) =>
     apiCallBiashara('/auth/forgot-password', {
       method: 'POST',
-      body: JSON.stringify({ email, role: 'user' }),
+      body: JSON.stringify({ email }),
       useAuth: false,
     }),
   getMe: () => apiCallBiashara('/auth/me'),
@@ -343,6 +441,20 @@ export const biasharaBusinessAPI = {
 
   // ── Announcements ─────────────────────────────────────────────────
   getMyAnnouncements: (id) => apiCallBiashara(`/business/${id}/announcements`),
+};
+
+// Business boosts — same endpoints the website uses from QuickBoostModal
+export const biasharaPaymentAPI = {
+  initiateMpesa: ({ phone, amount, plan, businessId }) =>
+    apiCallBiashara('/payment/initiate-mpesa', {
+      method: 'POST',
+      body: JSON.stringify({ phone, amount, plan, businessId }),
+    }),
+  submitBankTransfer: ({ amount, plan, transactionRef, bankMessage, businessId }) =>
+    apiCallBiashara('/payment/bank-transfer', {
+      method: 'POST',
+      body: JSON.stringify({ amount, plan, transactionRef, bankMessage, businessId }),
+    }),
 };
 
 // Biashara profile: change password, update name/phone — all native in-app

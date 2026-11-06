@@ -12,7 +12,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { Spacing, BorderRadius, FontSize } from '../../constants/theme';
 import { ArrowLeftIcon, CheckIcon, AlertIcon, PlusIcon, TrashIcon, CameraIcon } from './AccomIcons';
 
-const ACCENT = '#10b981';
+const ACCENT = '#e11d48';
 const API_BASE = 'https://axx-spaces-backend-1.onrender.com/api';
 
 const CATEGORIES = [
@@ -56,7 +56,7 @@ const AMENITIES = [
   'Restaurant', '24/7 Security', 'Room Service', 'Bar / Lounge', 'Hot Tub', 'Garden'
 ];
 
-export default function RegisterAccommodationScreen({ itemToEdit, onBack, onSuccess }) {
+export default function RegisterAccommodationScreen({ itemToEdit, onBack, onSuccess, tokenKey = 'accom_token' }) {
   const { colors } = useTheme();
   const isEditing = !!itemToEdit;
 
@@ -67,17 +67,30 @@ export default function RegisterAccommodationScreen({ itemToEdit, onBack, onSucc
   const [description, setDescription] = useState(itemToEdit?.description || '');
   const [county, setCounty] = useState(itemToEdit?.location?.county || itemToEdit?.county || 'Nairobi City');
   const [town, setTown] = useState(itemToEdit?.location?.town || itemToEdit?.town || '');
+  const [commonLocation, setCommonLocation] = useState(itemToEdit?.commonLocation || '');
   const [coords, setCoords] = useState(null);
   const [address, setAddress] = useState(itemToEdit?.location?.address || itemToEdit?.address || '');
+  const [mapLink, setMapLink] = useState(itemToEdit?.mapLink || '');
   const [basePrice, setBasePrice] = useState(itemToEdit?.pricing?.basePrice ? String(itemToEdit.pricing.basePrice) : (itemToEdit?.basePrice ? String(itemToEdit.basePrice) : ''));
+  const [weekendPrice, setWeekendPrice] = useState(itemToEdit?.weekendPrice ? String(itemToEdit.weekendPrice) : '');
+  const [peakPrice, setPeakPrice] = useState(itemToEdit?.peakPrice ? String(itemToEdit.peakPrice) : '');
   const [totalRooms, setTotalRooms] = useState(itemToEdit?.totalRooms ? String(itemToEdit.totalRooms) : '1');
   const [maxGuests, setMaxGuests] = useState(itemToEdit?.maxGuests ? String(itemToEdit.maxGuests) : '2');
+  const [checkInTime, setCheckInTime] = useState(itemToEdit?.checkInTime || '14:00');
+  const [checkOutTime, setCheckOutTime] = useState(itemToEdit?.checkOutTime || '11:00');
+  const [houseRules, setHouseRules] = useState(itemToEdit?.houseRules || '');
   const [bookingUrl, setBookingUrl] = useState(itemToEdit?.bookingUrl || '');
   const [selectedAmenities, setSelectedAmenities] = useState(
     Array.isArray(itemToEdit?.amenities) ? itemToEdit.amenities : []
   );
+  const [otherAmenities, setOtherAmenities] = useState('');
   const [newImages, setNewImages] = useState([]);
   const [existingImages, setExistingImages] = useState(itemToEdit?.images || []);
+  const [newVideos, setNewVideos] = useState([]);
+  const [existingVideos, setExistingVideos] = useState(
+    Array.isArray(itemToEdit?.videos) ? itemToEdit.videos : []
+  );
+  const [removedVideos, setRemovedVideos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState({ text: '', ok: false });
 
@@ -112,6 +125,34 @@ export default function RegisterAccommodationScreen({ itemToEdit, onBack, onSucc
     setExistingImages(prev => prev.filter((_, i) => i !== idx));
   };
 
+  const videoUri = (v) => (typeof v === 'string' ? v : (v?.videoUrl || v?.url || ''));
+
+  const pickVideos = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Please allow media access to upload video walkthroughs.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['videos'],
+      allowsMultipleSelection: true,
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets?.length > 0) {
+      setNewVideos(prev => [...prev, ...result.assets].slice(0, 10));
+    }
+  };
+
+  const removeNewVideo = (idx) => {
+    setNewVideos(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const removeExistingVideo = (video) => {
+    const uri = videoUri(video);
+    setExistingVideos(prev => prev.filter(v => videoUri(v) !== uri));
+    if (uri) setRemovedVideos(prev => [...prev, uri]);
+  };
+
   const handleSave = async () => {
     setMsg({ text: '', ok: false });
     if (!name.trim()) { setMsg({ text: 'Property name is required.', ok: false }); return; }
@@ -127,7 +168,7 @@ export default function RegisterAccommodationScreen({ itemToEdit, onBack, onSucc
     setLoading(true);
 
     try {
-      const token = await SecureStore.getItemAsync('accom_token');
+      const token = await SecureStore.getItemAsync(tokenKey);
       if (!token) throw new Error('You must be logged in to register a property.');
 
       const fd = new FormData();
@@ -137,14 +178,34 @@ export default function RegisterAccommodationScreen({ itemToEdit, onBack, onSucc
       fd.append('description', description.trim());
       fd.append('county', county.trim());
       fd.append('town', town.trim());
+      if (commonLocation.trim()) fd.append('commonLocation', commonLocation.trim());
       fd.append('address', address.trim());
       fd.append('lat', String((coords && coords.lat) || itemToEdit?.location?.coordinates?.[1] || itemToEdit?.lat || -1.286389));
       fd.append('lng', String((coords && coords.lng) || itemToEdit?.location?.coordinates?.[0] || itemToEdit?.lng || 36.817223));
+      if (mapLink.trim()) fd.append('mapLink', mapLink.trim());
       fd.append('basePrice', basePrice.trim());
+      if (weekendPrice.trim()) fd.append('weekendPrice', weekendPrice.trim());
+      if (peakPrice.trim()) fd.append('peakPrice', peakPrice.trim());
       fd.append('totalRooms', totalRooms.trim() || '1');
       fd.append('maxGuests', maxGuests.trim() || '2');
+      fd.append('checkInTime', checkInTime.trim() || '14:00');
+      fd.append('checkOutTime', checkOutTime.trim() || '11:00');
+      if (houseRules.trim()) fd.append('houseRules', houseRules.trim());
       if (bookingUrl.trim()) fd.append('bookingUrl', bookingUrl.trim());
-      fd.append('amenities', JSON.stringify(selectedAmenities));
+
+      const extraAmenities = otherAmenities
+        .split(',')
+        .map(a => a.trim())
+        .filter(Boolean);
+      fd.append('amenities', JSON.stringify([...selectedAmenities, ...extraAmenities]));
+
+      if (isEditing) {
+        const remaining = existingImages
+          .map(img => (typeof img === 'string' ? img : (img.imageUrl || img.url)))
+          .filter(Boolean);
+        fd.append('remainingImages', JSON.stringify(remaining));
+        if (removedVideos.length > 0) fd.append('removeVideos', JSON.stringify(removedVideos));
+      }
 
       newImages.forEach((uri, i) => {
         const ext = uri.split('.').pop() || 'jpg';
@@ -152,6 +213,16 @@ export default function RegisterAccommodationScreen({ itemToEdit, onBack, onSucc
           uri,
           name: `property_${Date.now()}_${i}.${ext}`,
           type: 'image/jpeg',
+        });
+      });
+
+      newVideos.forEach((asset, i) => {
+        const uri = asset.uri;
+        const ext = uri.split('.').pop() || 'mp4';
+        fd.append('videos', {
+          uri,
+          name: asset.fileName || `walkthrough_${Date.now()}_${i}.${ext}`,
+          type: asset.mimeType || 'video/mp4',
         });
       });
 
@@ -163,7 +234,7 @@ export default function RegisterAccommodationScreen({ itemToEdit, onBack, onSucc
       const xhr = new XMLHttpRequest();
       xhr.open(method, url);
       xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-      xhr.timeout = 60000;
+      xhr.timeout = 180000;
 
       xhr.onload = () => {
         setLoading(false);
@@ -193,7 +264,7 @@ export default function RegisterAccommodationScreen({ itemToEdit, onBack, onSucc
 
       xhr.ontimeout = () => {
         setLoading(false);
-        setMsg({ text: 'Request timed out while uploading images.', ok: false });
+        setMsg({ text: 'Request timed out while uploading media.', ok: false });
       };
 
       xhr.send(fd);
@@ -221,7 +292,7 @@ export default function RegisterAccommodationScreen({ itemToEdit, onBack, onSucc
         <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
           {msg.text ? (
             <View style={[s.msgBox, msg.ok ? s.msgOk : s.msgErr]}>
-              {msg.ok ? <CheckIcon color="#22c55e" size={14} /> : <AlertIcon color="#ef4444" size={14} />}
+              {msg.ok ? <CheckIcon color="#1e3a5f" size={14} /> : <AlertIcon color="#ef4444" size={14} />}
               <Text style={s.msgText}> {msg.text}</Text>
             </View>
           ) : null}
@@ -298,6 +369,15 @@ export default function RegisterAccommodationScreen({ itemToEdit, onBack, onSucc
               onChangeText={setTown}
             />
 
+            <Text style={s.label}>Common Location Name (optional)</Text>
+            <TextInput
+              style={s.input}
+              placeholder="e.g. South Coast, CBD, Nyali Beach"
+              placeholderTextColor={colors.textMuted}
+              value={commonLocation}
+              onChangeText={setCommonLocation}
+            />
+
             <Text style={s.label}>Physical Address / Landmark *</Text>
             <TextInput
               style={s.input}
@@ -305,6 +385,17 @@ export default function RegisterAccommodationScreen({ itemToEdit, onBack, onSucc
               placeholderTextColor={colors.textMuted}
               value={address}
               onChangeText={setAddress}
+            />
+
+            <Text style={s.label}>Google Maps Link (optional)</Text>
+            <TextInput
+              style={s.input}
+              placeholder="https://maps.google.com/..."
+              placeholderTextColor={colors.textMuted}
+              value={mapLink}
+              onChangeText={setMapLink}
+              autoCapitalize="none"
+              keyboardType="url"
             />
           </View>
 
@@ -337,6 +428,31 @@ export default function RegisterAccommodationScreen({ itemToEdit, onBack, onSucc
               </View>
             </View>
 
+            <View style={[s.twoCol, { marginTop: Spacing.two }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={s.label}>Weekend Price (KSh)</Text>
+                <TextInput
+                  style={s.input}
+                  placeholder="e.g. 9000"
+                  placeholderTextColor={colors.textMuted}
+                  value={weekendPrice}
+                  onChangeText={setWeekendPrice}
+                  keyboardType="numeric"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.label}>Peak Season Price (KSh)</Text>
+                <TextInput
+                  style={s.input}
+                  placeholder="e.g. 12000"
+                  placeholderTextColor={colors.textMuted}
+                  value={peakPrice}
+                  onChangeText={setPeakPrice}
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+
             <View style={{ marginTop: Spacing.two }}>
               <Text style={s.label}>Total Units / Rooms</Text>
               <TextInput
@@ -362,7 +478,46 @@ export default function RegisterAccommodationScreen({ itemToEdit, onBack, onSucc
             </View>
           </View>
 
-          {/* Section 4: Amenities */}
+          {/* Section 4: Check-in & House Rules */}
+          <View style={s.card}>
+            <Text style={s.cardTitle}>Check-in & House Rules</Text>
+
+            <View style={s.twoCol}>
+              <View style={{ flex: 1 }}>
+                <Text style={s.label}>Check-in Time</Text>
+                <TextInput
+                  style={s.input}
+                  placeholder="14:00"
+                  placeholderTextColor={colors.textMuted}
+                  value={checkInTime}
+                  onChangeText={setCheckInTime}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.label}>Check-out Time</Text>
+                <TextInput
+                  style={s.input}
+                  placeholder="11:00"
+                  placeholderTextColor={colors.textMuted}
+                  value={checkOutTime}
+                  onChangeText={setCheckOutTime}
+                />
+              </View>
+            </View>
+
+            <Text style={[s.label, { marginTop: Spacing.two }]}>House Rules (optional)</Text>
+            <TextInput
+              style={[s.input, s.textArea]}
+              placeholder="e.g. No smoking indoors, quiet hours after 10 PM, pets welcome on request..."
+              placeholderTextColor={colors.textMuted}
+              value={houseRules}
+              onChangeText={setHouseRules}
+              multiline
+              numberOfLines={3}
+            />
+          </View>
+
+          {/* Section 5: Amenities */}
           <View style={s.card}>
             <Text style={s.cardTitle}>Amenities ({selectedAmenities.length} selected)</Text>
             <View style={s.amenitiesGrid}>
@@ -381,6 +536,15 @@ export default function RegisterAccommodationScreen({ itemToEdit, onBack, onSucc
                 );
               })}
             </View>
+
+            <Text style={[s.label, { marginTop: Spacing.two }]}>Other Amenities (comma-separated)</Text>
+            <TextInput
+              style={s.input}
+              placeholder="e.g. Helicopter pad, Private beach, Rooftop terrace"
+              placeholderTextColor={colors.textMuted}
+              value={otherAmenities}
+              onChangeText={setOtherAmenities}
+            />
           </View>
 
           {/* Section 5: Photos */}
@@ -435,6 +599,47 @@ export default function RegisterAccommodationScreen({ itemToEdit, onBack, onSucc
                 <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 4 }}>Tap to choose high quality photos</Text>
               </TouchableOpacity>
             ) : null}
+          </View>
+
+          {/* Video walkthroughs */}
+          <View style={s.card}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={s.cardTitle}>Video Walkthroughs</Text>
+              <TouchableOpacity style={s.photoBtn} onPress={pickVideos}>
+                <Text style={s.photoBtnText}> Add Video</Text>
+              </TouchableOpacity>
+            </View>
+
+            {existingVideos.length === 0 && newVideos.length === 0 ? (
+              <TouchableOpacity style={s.videoEmpty} onPress={pickVideos}>
+                <Text style={{ fontSize: 26 }}>🎥</Text>
+                <Text style={[s.photoEmptyText, { color: colors.text }]}>No videos added</Text>
+                <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 4 }}>
+                  Share a walkthrough — listings with video get more bookings
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={{ marginTop: 6 }}>
+                {existingVideos.map((video, idx) => (
+                  <View key={`old-${idx}`} style={[s.videoRow, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                    <Text style={[s.videoName, { color: colors.text }]} numberOfLines={1}>🎥 Existing video {idx + 1}</Text>
+                    <TouchableOpacity onPress={() => removeExistingVideo(video)}>
+                      <Text style={{ color: '#ef4444', fontSize: 12, fontWeight: '800' }}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                {newVideos.map((asset, idx) => (
+                  <View key={`new-${idx}`} style={[s.videoRow, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                    <Text style={[s.videoName, { color: colors.text }]} numberOfLines={1}>
+                      🎥 {asset.fileName || `New video ${idx + 1}`}
+                    </Text>
+                    <TouchableOpacity onPress={() => removeNewVideo(idx)}>
+                      <Text style={{ color: '#ef4444', fontSize: 12, fontWeight: '800' }}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
 
           {/* Submit button */}
@@ -525,6 +730,15 @@ const getStyles = (colors) => StyleSheet.create({
     borderRadius: BorderRadius.lg, padding: 24, alignItems: 'center', marginTop: 10,
   },
   photoEmptyText: { fontSize: 14, fontWeight: '700', marginTop: 8 },
+  videoEmpty: {
+    borderWidth: 2, borderStyle: 'dashed', borderColor: colors.border,
+    borderRadius: BorderRadius.lg, padding: 24, alignItems: 'center', marginTop: 10,
+  },
+  videoRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    borderWidth: 1, borderRadius: BorderRadius.md, paddingHorizontal: 10, paddingVertical: 9, marginTop: 8,
+  },
+  videoName: { flex: 1, fontSize: 12, fontWeight: '700', marginRight: 8 },
   submitBtn: {
     backgroundColor: ACCENT, borderRadius: BorderRadius.lg, padding: 16,
     alignItems: 'center', marginTop: Spacing.two, marginBottom: Spacing.four,

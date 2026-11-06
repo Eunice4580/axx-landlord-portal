@@ -25,7 +25,7 @@ export const LocationIcon = ({ color = '#94a3b8', size = 14 }) => (
   </Svg>
 );
 
-export const StarIcon = ({ color = '#fbbf24', size = 14, filled = false }) => (
+export const StarIcon = ({ color = '#e11d48', size = 14, filled = false }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </Svg>
@@ -52,7 +52,7 @@ export const GlobeIcon = ({ color = '#94a3b8', size = 18 }) => (
   </Svg>
 );
 
-export const MessageIcon = ({ color = '#22c55e', size = 18 }) => (
+export const MessageIcon = ({ color = '#1e3a5f', size = 18 }) => (
   <Svg {...d(size, color)} viewBox="0 0 24 24">
     <Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
   </Svg>
@@ -107,7 +107,7 @@ export const EyeOffIcon = ({ color = '#94a3b8', size = 16 }) => (
   </Svg>
 );
 
-export const CheckIcon = ({ color = '#22c55e', size = 16 }) => (
+export const CheckIcon = ({ color = '#1e3a5f', size = 16 }) => (
   <Svg {...d(size, color, 2.5)} viewBox="0 0 24 24">
     <Polyline points="20 6 9 17 4 12" />
   </Svg>
@@ -127,7 +127,7 @@ export const ChevronRightIcon = ({ color = '#94a3b8', size = 16 }) => (
   </Svg>
 );
 
-export const ArrowLeftIcon = ({ color = '#fbbf24', size = 16 }) => (
+export const ArrowLeftIcon = ({ color = '#e11d48', size = 16 }) => (
   <Svg {...d(size, color, 2.5)} viewBox="0 0 24 24">
     <Line x1="19" y1="12" x2="5" y2="12" />
     <Polyline points="12 19 5 12 12 5" />
@@ -140,7 +140,7 @@ export const FilterIcon = ({ color = '#94a3b8', size = 16 }) => (
   </Svg>
 );
 
-export const RefreshIcon = ({ color = '#fbbf24', size = 16 }) => (
+export const RefreshIcon = ({ color = '#e11d48', size = 16 }) => (
   <Svg {...d(size, color)} viewBox="0 0 24 24">
     <Polyline points="23 4 23 10 17 10" />
     <Polyline points="1 20 1 14 7 14" />
@@ -148,7 +148,7 @@ export const RefreshIcon = ({ color = '#fbbf24', size = 16 }) => (
   </Svg>
 );
 
-export const StoreIcon = ({ color = '#fbbf24', size = 24 }) => (
+export const StoreIcon = ({ color = '#e11d48', size = 24 }) => (
   <Svg {...d(size, color)} viewBox="0 0 24 24">
     <Path d="M2 3h20l-2 7H4L2 3z" />
     <Path d="M4 10v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V10" />
@@ -167,7 +167,7 @@ export const BuildingIcon = ({ color = '#e11d48', size = 24 }) => (
   </Svg>
 );
 
-export const BarChartIcon = ({ color = '#fbbf24', size = 20 }) => (
+export const BarChartIcon = ({ color = '#e11d48', size = 20 }) => (
   <Svg {...d(size, color)} viewBox="0 0 24 24">
     <Line x1="18" y1="20" x2="18" y2="10" />
     <Line x1="12" y1="20" x2="12" y2="4" />
@@ -176,14 +176,14 @@ export const BarChartIcon = ({ color = '#fbbf24', size = 20 }) => (
   </Svg>
 );
 
-export const ShieldCheckIcon = ({ color = '#22c55e', size = 14 }) => (
+export const ShieldCheckIcon = ({ color = '#1e3a5f', size = 14 }) => (
   <Svg {...d(size, color)} viewBox="0 0 24 24">
     <Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
     <Polyline points="9 12 11 14 15 10" />
   </Svg>
 );
 
-export const ClockIcon = ({ color = '#f59e0b', size = 14 }) => (
+export const ClockIcon = ({ color = '#1e3a5f', size = 14 }) => (
   <Svg {...d(size, color)} viewBox="0 0 24 24">
     <Circle cx="12" cy="12" r="10" />
     <Polyline points="12 6 12 12 16 14" />
@@ -199,14 +199,14 @@ export const GridIcon = ({ color = '#94a3b8', size = 16 }) => (
   </Svg>
 );
 
-export const EditIcon = ({ color = '#fbbf24', size = 16 }) => (
+export const EditIcon = ({ color = '#e11d48', size = 16 }) => (
   <Svg {...d(size, color)} viewBox="0 0 24 24">
     <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
     <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
   </Svg>
 );
 
-export const SunIcon = ({ color = '#fbbf24', size = 16 }) => (
+export const SunIcon = ({ color = '#e11d48', size = 16 }) => (
   <Svg {...d(size, color)} viewBox="0 0 24 24">
     <Circle cx="12" cy="12" r="5" />
     <Line x1="12" y1="1" x2="12" y2="3" />
@@ -220,7 +220,7 @@ export const SunIcon = ({ color = '#fbbf24', size = 16 }) => (
   </Svg>
 );
 
-export const MoonIcon = ({ color = '#fbbf24', size = 16 }) => (
+export const MoonIcon = ({ color = '#e11d48', size = 16 }) => (
   <Svg {...d(size, color)} viewBox="0 0 24 24">
     <Path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
   </Svg>

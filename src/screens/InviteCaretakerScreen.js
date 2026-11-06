@@ -317,7 +317,7 @@ const CheckIcon = ({ size = 14, color = '#fff' }) => (
   </Svg>
 );
 
-const CheckSmallIcon = ({ size = 13, color = '#16a34a' }) => (
+const CheckSmallIcon = ({ size = 13, color = '#1e3a5f' }) => (
   <Svg {...svgBase(size, color, 2.5)} viewBox="0 0 24 24">
     <Polyline points="20 6 9 17 4 12" />
   </Svg>
@@ -438,7 +438,7 @@ const getStyles = (colors) => StyleSheet.create({
     alignItems: 'center',
   },
   matchRow: { flexDirection: 'row', alignItems: 'center', marginTop: 5, gap: 4 },
-  matchOk: { color: '#16a34a', fontSize: 12, fontWeight: '500' },
+  matchOk: { color: '#1e3a5f', fontSize: 12, fontWeight: '500' },
   matchErr: { color: '#ef4444', fontSize: 12, fontWeight: '500' },
 
   propertyRow: {

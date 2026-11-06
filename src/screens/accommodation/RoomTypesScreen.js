@@ -8,7 +8,7 @@ import * as SecureStore from 'expo-secure-store';
 import Svg, { Path, Polyline, Circle, Line, Rect } from 'react-native-svg';
 
 const API_BASE = 'https://axx-spaces-backend-1.onrender.com/api';
-const ACCENT   = '#fbbf24';
+const ACCENT = '#e11d48';
 
 /* ── Colors ─────────────────────────────────────────────────── */
 const C = {
@@ -18,7 +18,7 @@ const C = {
   border:'rgba(255,255,255,0.08)',
   text:  '#f1f5f9',
   muted: '#94a3b8',
-  green: '#10b981',
+  green: '#e11d48',
   red:   '#ef4444',
 };
 

@@ -7,6 +7,36 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as SecureStore from 'expo-secure-store';
+import ImageCropModal from '../../components/ImageCropModal';
+import HelpCenterScreen from '../support/HelpCenterScreen';
+
+const ACCOMMODATION_TIPS = [
+  {
+    id: 'a1',
+    question: 'How do I add a new room type?',
+    answer: 'Open your accommodation listing, go to the Room Types tab and tap "Add Room Type". Set the name, price, capacity and photos.',
+  },
+  {
+    id: 'a2',
+    question: 'How do I manage bookings?',
+    answer: 'Go to the Bookings tab from your accommodation dashboard. You can view, confirm or decline incoming booking requests there.',
+  },
+  {
+    id: 'a3',
+    question: 'How do I update my accommodation listing?',
+    answer: 'Tap on your accommodation from the dashboard then tap Edit. You can update the name, description, amenities, location and photos.',
+  },
+  {
+    id: 'a4',
+    question: 'Why is my accommodation not visible to guests?',
+    answer: 'Make sure your listing is published. Open the listing and check that the status is set to Active. Also confirm at least one room type is added.',
+  },
+  {
+    id: 'a5',
+    question: 'How do I set room availability?',
+    answer: 'Inside a room type, tap "Manage Availability" to block or open specific dates. This controls what guests see when booking.',
+  },
+];
 import { useTheme } from '../../context/ThemeContext';
 import { Spacing, BorderRadius, FontSize } from '../../constants/theme';
 import {
@@ -15,15 +45,15 @@ import {
   CameraIcon,
 } from './AccomIcons';
 
-const ACCENT = '#10b981';
+const ACCENT = '#e11d48';
 const API_BASE = 'https://axx-spaces-backend-1.onrender.com/api';
 
 function MsgBanner({ msg }) {
   if (!msg?.text) return null;
   return (
     <View style={[styles.msgBox, msg.ok ? styles.msgOk : styles.msgErr]}>
-      {msg.ok ? <CheckIcon color="#22c55e" size={14} /> : <AlertIcon color="#ef4444" size={14} />}
-      <Text style={[styles.msgText, { color: msg.ok ? '#22c55e' : '#ef4444' }]}> {msg.text}</Text>
+      {msg.ok ? <CheckIcon color="#1e3a5f" size={14} /> : <AlertIcon color="#ef4444" size={14} />}
+      <Text style={[styles.msgText, { color: msg.ok ? '#1e3a5f' : '#ef4444' }]}> {msg.text}</Text>
     </View>
   );
 }
@@ -154,6 +184,7 @@ function EditProfileView({ user, colors, onDone, onProfileSaved }) {
   const [avatarUri, setAvatarUri] = useState(null);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState({ text: '', ok: false });
+  const [cropModal, setCropModal] = useState({ visible: false, uri: null, width: 0, height: 0 });
 
   const pickAvatar = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -163,12 +194,11 @@ function EditProfileView({ user, colors, onDone, onProfileSaved }) {
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      quality: 0.8,
-      allowsEditing: true,
-      aspect: [1, 1],
+      quality: 1,
     });
-    if (!result.canceled && result.assets?.[0]?.uri) {
-      setAvatarUri(result.assets[0].uri);
+    if (!result.canceled && result.assets?.[0]) {
+      const { uri, width, height } = result.assets[0];
+      setCropModal({ visible: true, uri, width: width || 1000, height: height || 1000 });
     }
   };
 
@@ -247,7 +277,8 @@ function EditProfileView({ user, colors, onDone, onProfileSaved }) {
   const currentDisplay = avatarUri || user?.profileImage || user?.avatar;
 
   return (
-    <View style={[styles.formCard, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
+    <>
+      <View style={[styles.formCard, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
       <Text style={[styles.formCardTitle, { color: colors.text }]}>Edit Host Profile</Text>
       <MsgBanner msg={msg} />
 
@@ -313,11 +344,25 @@ function EditProfileView({ user, colors, onDone, onProfileSaved }) {
         </TouchableOpacity>
       </View>
     </View>
+
+    <ImageCropModal
+      visible={cropModal.visible}
+      imageUri={cropModal.uri}
+      imageWidth={cropModal.width}
+      imageHeight={cropModal.height}
+      onDone={(uri) => {
+        setAvatarUri(uri);
+        setCropModal({ visible: false, uri: null, width: 0, height: 0 });
+      }}
+      onCancel={() => setCropModal({ visible: false, uri: null, width: 0, height: 0 })}
+    />
+  </>
   );
 }
 
 /* ── Main Account Screen ─────────────────────────────────────────── */
 export default function AccommodationAccountScreen({ user, onLogout, onProfileUpdated }) {
+  const [showHelpCenter, setShowHelpCenter] = useState(false);
   const { colors, isDark, toggleTheme } = useTheme();
   const [view, setView] = useState('main'); // 'main' | 'editProfile' | 'changePassword'
   const [localUser, setLocalUser] = useState(user);
@@ -338,6 +383,10 @@ export default function AccommodationAccountScreen({ user, onLogout, onProfileUp
   const displayName = localUser?.name || 'Accommodation Host';
   const email = localUser?.email || '';
   const avatarUrl = localUser?.profileImage || localUser?.avatar;
+
+  if (showHelpCenter) {
+    return <HelpCenterScreen navigation={{ goBack: () => setShowHelpCenter(false) }} tips={ACCOMMODATION_TIPS} />;
+  }
 
   const confirmLogout = () =>
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -478,6 +527,22 @@ export default function AccommodationAccountScreen({ user, onLogout, onProfileUp
                   </Text>
                 </Text>
               </View>
+
+              {/* Help Center */}
+              <TouchableOpacity
+                style={[styles.menuCard, { backgroundColor: colors.backgroundElement, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 12, marginBottom: 12 }]}
+                onPress={() => setShowHelpCenter(true)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.menuIcon, { backgroundColor: ACCENT + '15' }]}>
+                  <Text style={{ fontSize: 16 }}>❓</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.menuLabel, { color: colors.text }]}>Help Center</Text>
+                  <Text style={[styles.menuSub, { color: colors.textMuted }]}>Contact us & quick tips</Text>
+                </View>
+                <ChevronRightIcon color={colors.textMuted} size={16} />
+              </TouchableOpacity>
 
               {/* Sign Out */}
               <TouchableOpacity style={[styles.logoutBtn, { borderColor: '#ef444430', backgroundColor: '#ef444410' }]} onPress={confirmLogout}>

@@ -14,3 +14,18 @@ export const PROPERTY_TYPES = [
 ];
 
 export const HOSTEL_PROPERTY_TYPE = "Hostel Room";
+
+export const OWNERSHIP_TYPES = [
+  { value: "title_deed", label: "Title Deed" },
+  { value: "sectional_title", label: "Sectional Title" },
+  { value: "share_certificate", label: "Share Certificate" },
+  { value: "agreement", label: "Sale Agreement" },
+  { value: "no_title", label: "No Title (Plot / Informal)" },
+];
+
+export const SALE_TERMS = [
+  { value: "cash", label: "Cash" },
+  { value: "mortgage", label: "Mortgage Accepted" },
+  { value: "negotiable", label: "Open to Negotiation" },
+];
+

@@ -118,25 +118,25 @@ export default function RegisterScreen({ onRegisterSuccess, onBack }) {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[s.roleCard, selectedRole === 'caretaker_info' && { borderColor: '#f59e0b', backgroundColor: '#f59e0b12' }]}
+              style={[s.roleCard, selectedRole === 'caretaker_info' && { borderColor: '#1e3a5f', backgroundColor: '#1e3a5f12' }]}
               onPress={() => { setSelectedRole('caretaker_info'); setError(''); }}
               activeOpacity={0.8}
             >
               <Text style={s.roleCardIcon}>🔑</Text>
-              <Text style={[s.roleCardTitle, { color: selectedRole === 'caretaker_info' ? '#f59e0b' : colors.text }]}>Caretaker</Text>
+              <Text style={[s.roleCardTitle, { color: selectedRole === 'caretaker_info' ? '#1e3a5f' : colors.text }]}>Caretaker</Text>
               <Text style={[s.roleCardSub, { color: colors.textMuted }]}>Manage properties</Text>
             </TouchableOpacity>
           </View>
 
           {/* Caretaker info card — shown instead of form */}
           {selectedRole === 'caretaker_info' && (
-            <View style={[s.infoCard, { backgroundColor: '#fffbeb', borderColor: '#f59e0b' }]}>
+            <View style={[s.infoCard, { backgroundColor: '#eff6ff', borderColor: '#1e3a5f' }]}>
               <Text style={s.infoIcon}>ℹ️</Text>
               <Text style={s.infoTitle}>Caretaker Accounts</Text>
               <Text style={[s.infoBody, { color: colors.textSecondary }]}>
                 Caretaker accounts are created by your landlord — not through self-registration.{`\n\n`}Ask your landlord to invite you from their dashboard. You will receive an email with your login credentials.
               </Text>
-              <TouchableOpacity style={[s.btn, { backgroundColor: '#f59e0b', marginTop: 20 }]} onPress={onBack} activeOpacity={0.85}>
+              <TouchableOpacity style={[s.btn, { backgroundColor: '#1e3a5f', marginTop: 20 }]} onPress={onBack} activeOpacity={0.85}>
                 <Text style={[s.btnText, { color: '#1f2937' }]}>Back to Login</Text>
               </TouchableOpacity>
             </View>
@@ -289,13 +289,13 @@ const getStyles = (colors) => StyleSheet.create({
     alignItems: 'center', marginBottom: Spacing.three,
   },
   infoIcon:  { fontSize: 28, marginBottom: 8 },
-  infoTitle: { fontSize: 18, fontWeight: '800', color: '#92400e', marginBottom: 8 },
+  infoTitle: { fontSize: 18, fontWeight: '800', color: '#1e3a5f', marginBottom: 8 },
   infoBody:  { fontSize: 14, textAlign: 'center', lineHeight: 22 },
 
   errorBox:   { backgroundColor: '#fee2e2', borderRadius: 8, padding: 12, marginBottom: 14 },
   errorText:  { color: '#dc2626', fontSize: 13 },
-  successBox: { backgroundColor: '#dcfce7', borderRadius: 8, padding: 12, marginBottom: 14 },
-  successText:{ color: '#166534', fontSize: 13 },
+  successBox: { backgroundColor: '#dbeafe', borderRadius: 8, padding: 12, marginBottom: 14 },
+  successText:{ color: '#1e3a5f', fontSize: 13 },
 
   form:  {},
   label: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 7, marginTop: Spacing.two },

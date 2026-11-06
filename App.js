@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SecureStore from 'expo-secure-store';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import PortalSelectorScreen from './src/screens/biashara/PortalSelectorScreen';
@@ -14,6 +15,7 @@ import DashboardScreen from './src/screens/DashboardScreen';
 import CaretakerDashboardScreen from './src/screens/CaretakerDashboardScreen';
 import AddPropertyScreen from './src/screens/AddPropertyScreen';
 import PaymentsScreen from './src/screens/PaymentsScreen';
+import MessagesScreen from './src/screens/MessagesScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,8 +23,10 @@ import { userAPI } from './src/services/api';
 import { View, ActivityIndicator } from 'react-native';
 import * as Linking from 'expo-linking';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
+import AccommodationDetailScreen from './src/screens/accommodation/AccommodationDetailScreen';
 
 const Tab = createBottomTabNavigator();
+const AccomStack = createNativeStackNavigator();
 
 // Simple SVG-free tab icons using Text (clean, no library needed)
 const TabIcon = ({ label, focused, colors }) => (
@@ -74,6 +78,12 @@ function LandlordTabs({ user, onLogout }) {
       />
 
       <Tab.Screen
+        name="Messages"
+        component={MessagesScreen}
+        options={{ tabBarLabel: 'Messages' }}
+      />
+
+      <Tab.Screen
         name="Settings"
         options={{ tabBarLabel: 'Settings' }}
       >
@@ -95,7 +105,9 @@ function AppContent() {
   useEffect(() => {
     async function checkForUpdate() {
       try {
-        if (!Updates.isEmbeddedLaunch) return; // skip in dev
+        // Do not gate on isEmbeddedLaunch: it becomes false after the first OTA
+        // update is applied, which would skip every later update check.
+        if (!Updates.isEnabled || __DEV__) return; // skip in dev
         const update = await Updates.checkForUpdateAsync();
         if (update.isAvailable) {
           await Updates.fetchUpdateAsync();
@@ -211,10 +223,27 @@ function AppContent() {
   // ── Accommodation Portal (self-contained) ──
   if (selectedPortal === 'accommodation') {
     return (
-      <>
-        <AccommodationPortal onBackToPortalSelector={handleBackToSelector} />
+      <NavigationContainer independent={true}>
+        <AccomStack.Navigator screenOptions={{ headerShown: false }}>
+          <AccomStack.Screen
+            name="AccommodationPortal"
+            options={{ headerShown: false }}
+          >
+            {props => (
+              <AccommodationPortal
+                {...props}
+                onBackToPortalSelector={handleBackToSelector}
+              />
+            )}
+          </AccomStack.Screen>
+          <AccomStack.Screen
+    name="AccommodationDetail"
+    component={AccommodationDetailScreen}
+    options={{ headerShown: true, title: 'Accommodation Detail' }}
+  />
+</AccomStack.Navigator>
         <StatusBar style={isDark ? 'light' : 'dark'} />
-      </>
+      </NavigationContainer>
     );
   }
 

@@ -29,7 +29,7 @@ const PORTALS = [
     key: 'biashara',
     title: 'AxxBiashara',
     subtitle: 'Manage your business directory',
-    accent: '#fbbf24',
+    accent: '#e11d48',
     logo: MARKETPLACE_LOGO,
     whiteBadge: true,
   },
@@ -37,14 +37,14 @@ const PORTALS = [
     key: 'accommodation',
     title: 'Accommodation',
     subtitle: 'Manage properties & bookings',
-    accent: '#10b981',
+    accent: '#e11d48',
     logo: AXX_LOGO,
   },
   {
     key: 'agent',
     title: 'Agent Portal',
     subtitle: 'Manage listings & partnerships',
-    accent: '#fbbf24',
+    accent: '#e11d48',
     logo: AXX_LOGO,
   },
 ];
@@ -126,7 +126,7 @@ export default function PortalSelectorScreen({ onSelectPortal }) {
             <Image
               source={require('../../../assets/icon.png')}
               style={styles.logoImage}
-              resizeMode="contain"
+              resizeMode="cover"
             />
           </View>
 
@@ -139,7 +139,7 @@ export default function PortalSelectorScreen({ onSelectPortal }) {
           {/* Coloured accent dots */}
           <View style={styles.dotsRow}>
             <View style={[styles.dot, { backgroundColor: '#e11d48' }]} />
-            <View style={[styles.dot, { backgroundColor: '#fbbf24' }]} />
+            <View style={[styles.dot, { backgroundColor: '#e11d48' }]} />
             <View style={[styles.dot, { backgroundColor: '#1e3a5f' }]} />
           </View>
 
@@ -188,22 +188,21 @@ const styles = StyleSheet.create({
 
   /* Glowing ring around logo */
   logoRing: {
-    width: 104, height: 104,
-    borderRadius: 28,
-    padding: 4,
-    borderWidth: 2,
-    borderColor: '#e11d4830',
-    backgroundColor: '#fff',
+    width: 130, height: 130,
+    borderRadius: 32,
+    borderWidth: 2.5,
+    borderColor: '#e11d48',
+    backgroundColor: '#e11d48',
     shadowColor: '#e11d48',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
     elevation: 10,
     marginBottom: 16,
+    overflow: 'hidden',
   },
   logoImage: {
     width: '100%', height: '100%',
-    borderRadius: 24,
   },
 
   /* AXX SPACE styled */

@@ -7,10 +7,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { biasharaBusinessAPI } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { Spacing, BorderRadius, FontSize } from '../../constants/theme';
-import { StarIcon, RefreshIcon, AlertIcon } from './Icons';
+import { StarIcon, RefreshIcon } from './Icons';
+import BiasharaBoostModal from './BiasharaBoostModal';
 import Svg, { Path, Circle, Line, Polyline, Polygon } from 'react-native-svg';
 
-const ACCENT = '#fbbf24';
+const ACCENT = '#e11d48';
 
 /* ── Icons ─────────────────────────────────────────────────────── */
 const StoreIcon = ({ color = '#94a3b8', size = 22 }) => (
@@ -68,8 +69,8 @@ const TrendingIcon = ({ color = '#94a3b8', size = 13 }) => (
 
 /* ── Status helpers ─────────────────────────────────────────────── */
 const STATUS_MAP = {
-  active:   { bg: '#22c55e18', border: '#22c55e40', text: '#22c55e', label: 'Live' },
-  approved: { bg: '#22c55e18', border: '#22c55e40', text: '#22c55e', label: 'Live' },
+  active:   { bg: '#1e3a5f18', border: '#1e3a5f40', text: '#1e3a5f', label: 'Live' },
+  approved: { bg: '#1e3a5f18', border: '#1e3a5f40', text: '#1e3a5f', label: 'Live' },
   pending:  { bg: ACCENT + '18', border: ACCENT + '40', text: ACCENT, label: 'Pending Review' },
   rejected: { bg: '#ef444418', border: '#ef444440', text: '#ef4444', label: 'Rejected' },
   archived: { bg: '#64748b18', border: '#64748b40', text: '#64748b', label: 'Archived' },
@@ -188,7 +189,7 @@ function BusinessCard({ biz, colors, onEdit, onDelete, onBoost }) {
                   <Text style={[styles.analyticLab, { color: colors.textMuted }]}> views</Text>
                 </View>
                 <View style={styles.analyticItem}>
-                  <TrendingIcon color="#22c55e" size={13} />
+                  <TrendingIcon color="#1e3a5f" size={13} />
                   <Text style={[styles.analyticVal, { color: colors.text }]}> {(analytics?.contactClicks || 0) + (analytics?.websiteClicks || 0)}</Text>
                   <Text style={[styles.analyticLab, { color: colors.textMuted }]}> clicks</Text>
                 </View>
@@ -252,6 +253,7 @@ export default function BiasharaListingsScreen({
 }) {
   const { colors } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
+  const [boostTarget, setBoostTarget] = useState(null);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -259,13 +261,7 @@ export default function BiasharaListingsScreen({
     setRefreshing(false);
   }, [onRefresh]);
 
-  const handleBoost = (biz) => {
-    Alert.alert(
-      'Boost Business',
-      `Boosting "${biz.name}" gives it a prominent placement in the directory.\n\nPay via M-Pesa on axxspace.com/axxbiashara to activate a boost for this listing.`,
-      [{ text: 'OK' }]
-    );
-  };
+  const handleBoost = (biz) => setBoostTarget(biz);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
@@ -339,6 +335,14 @@ export default function BiasharaListingsScreen({
           <View style={{ height: 32 }} />
         </ScrollView>
       )}
+
+      <BiasharaBoostModal
+        visible={!!boostTarget}
+        business={boostTarget}
+        defaultPhone={user?.phone}
+        onClose={() => setBoostTarget(null)}
+        onSuccess={() => onRefresh?.()}
+      />
     </SafeAreaView>
   );
 }

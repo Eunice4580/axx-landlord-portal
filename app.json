@@ -29,7 +29,8 @@
         {
           "locationWhenInUsePermission": "Allow Axxspace Manager to use your location to fill in your property or business address."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "eas": {

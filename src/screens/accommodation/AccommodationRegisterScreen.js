@@ -9,7 +9,7 @@ import { ArrowLeftIcon, EyeIcon, EyeOffIcon, CheckIcon, AlertIcon } from './Acco
 import { useTheme } from '../../context/ThemeContext';
 import { Spacing, FontSize } from '../../constants/theme';
 
-const ACCENT    = '#10b981';
+const ACCENT = '#e11d48';
 const API_BASE  = 'https://axx-spaces-backend-1.onrender.com/api';
 
 export default function AccommodationRegisterScreen({ onRegisterSuccess, onBack }) {
@@ -107,9 +107,9 @@ export default function AccommodationRegisterScreen({ onRegisterSuccess, onBack 
           {!!msg.text && (
             <View style={[s.msgBox, msg.ok ? s.msgOk : s.msgErr]}>
               {msg.ok
-                ? <CheckIcon color="#10b981" size={14} />
+                ? <CheckIcon color="#e11d48" size={14} />
                 : <AlertIcon color="#ef4444" size={14} />}
-              <Text style={[s.msgText, { color: msg.ok ? '#10b981' : '#ef4444' }]}> {msg.text}</Text>
+              <Text style={[s.msgText, { color: msg.ok ? '#e11d48' : '#ef4444' }]}> {msg.text}</Text>
             </View>
           )}
 
@@ -223,7 +223,7 @@ const getStyles = (colors) => StyleSheet.create({
   backText:{ fontSize: FontSize.sm, fontWeight: '700' },
 
   brand:    { alignItems: 'center', marginBottom: Spacing.four },
-  logoMark: { width: 72, height: 72, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.two, shadowColor: '#10b981', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.4, shadowRadius: 20, elevation: 10 },
+  logoMark: { width: 72, height: 72, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.two, shadowColor: '#e11d48', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.4, shadowRadius: 20, elevation: 10 },
   logoText: { color: '#fff', fontSize: 18, fontWeight: '900', letterSpacing: 2 },
   brandName:{ fontSize: 26, fontWeight: '900', letterSpacing: 3, marginBottom: 2 },
   tagline:  { fontSize: FontSize.sm, fontWeight: '600', letterSpacing: 0.3 },

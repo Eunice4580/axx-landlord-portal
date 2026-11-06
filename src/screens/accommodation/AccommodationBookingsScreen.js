@@ -9,7 +9,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { Spacing, BorderRadius, FontSize } from '../../constants/theme';
 import { CalendarIcon, UserIcon, HomeIcon, RefreshIcon } from './AccomIcons';
 
-const ACCENT = '#10b981';
+const ACCENT = '#e11d48';
 const API_BASE = 'https://axx-spaces-backend-1.onrender.com/api';
 
 async function apiGet(path) {
@@ -23,8 +23,8 @@ async function apiGet(path) {
 }
 
 const STATUS_MAP = {
-  confirmed:  { bg: '#22c55e18', border: '#22c55e40', text: '#22c55e', label: 'Confirmed' },
-  pending:    { bg: '#f59e0b18', border: '#f59e0b40', text: '#f59e0b', label: 'Pending' },
+  confirmed:  { bg: '#1e3a5f18', border: '#1e3a5f40', text: '#1e3a5f', label: 'Confirmed' },
+  pending:    { bg: '#1e3a5f18', border: '#1e3a5f40', text: '#1e3a5f', label: 'Pending' },
   cancelled:  { bg: '#ef444418', border: '#ef444440', text: '#ef4444', label: 'Cancelled' },
   completed:  { bg: '#3b82f618', border: '#3b82f640', text: '#3b82f6', label: 'Completed' },
   checked_in: { bg: '#8b5cf618', border: '#8b5cf640', text: '#8b5cf6', label: 'Checked In' },

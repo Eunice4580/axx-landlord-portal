@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,11 @@ import {
   ScrollView,
   Switch,
   Image,
+  TextInput,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as SecureStore from 'expo-secure-store';
 import { Spacing, BorderRadius, FontSize } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
 import InviteCaretakerScreen from './InviteCaretakerScreen';
@@ -16,6 +19,7 @@ import MyCaretakersScreen from './MyCaretakersScreen';
 import ChangePasswordScreen from './ChangePasswordScreen';
 import ChangeEmailScreen from './ChangeEmailScreen';
 import ChangeContactScreen from './ChangeContactScreen';
+import HelpCenterScreen from './support/HelpCenterScreen';
 
 const Row = ({ label, value, colors }) => (
   <View style={{ paddingVertical: Spacing.two, borderBottomWidth: 1, borderBottomColor: colors.border }}>
@@ -28,15 +32,79 @@ const Row = ({ label, value, colors }) => (
   </View>
 );
 
-export default function SettingsScreen({ user, onLogout }) {
+export default function SettingsScreen({ user, onLogout, navigation }) {
   const [showInvite, setShowInvite] = useState(false);
   const [showManage, setShowManage] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showChangeEmail, setShowChangeEmail] = useState(false);
   const [showChangeContact, setShowChangeContact] = useState(false);
+  const [showHelpCenter, setShowHelpCenter] = useState(false);
   const [localUser, setLocalUser] = useState(user);
+  const [payoutNumber, setPayoutNumber] = useState('');
+  const [payoutSaved, setPayoutSaved] = useState(false);
+  const [notifPrefs, setNotifPrefs] = useState({
+    scanAlerts: true,
+    weeklySummary: true,
+    agentRequests: true,
+  });
+  const [defaultFilter, setDefaultFilter] = useState('all');
   const { colors, isDark, toggleTheme } = useTheme();
   const styles = getStyles(colors);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [storedPayout, storedPrefs, storedFilter] = await Promise.all([
+          SecureStore.getItemAsync('landlord_payout_number'),
+          SecureStore.getItemAsync('landlord_notification_prefs'),
+          SecureStore.getItemAsync('landlord_default_filter'),
+        ]);
+        if (cancelled) return;
+        setPayoutNumber(storedPayout || user?.phone || '');
+        if (storedPrefs) setNotifPrefs(prev => ({ ...prev, ...JSON.parse(storedPrefs) }));
+        if (storedFilter) setDefaultFilter(storedFilter);
+      } catch {
+        // Fall back to defaults when device storage is unavailable.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.phone]);
+
+  const savePayout = async () => {
+    const clean = payoutNumber.replace(/\s+/g, '');
+    if (clean && !/^(?:\+?254|0)\d{9}$/.test(clean)) {
+      Alert.alert('Check the number', 'Enter a valid M-Pesa number, e.g. 0712345678.');
+      return;
+    }
+    try {
+      await SecureStore.setItemAsync('landlord_payout_number', clean);
+      setPayoutNumber(clean);
+      setPayoutSaved(true);
+      setTimeout(() => setPayoutSaved(false), 2500);
+    } catch {
+      Alert.alert('Save failed', 'Could not save payout details on this device.');
+    }
+  };
+
+  const updateNotifPref = async (key, value) => {
+    const next = { ...notifPrefs, [key]: value };
+    setNotifPrefs(next);
+    try {
+      await SecureStore.setItemAsync('landlord_notification_prefs', JSON.stringify(next));
+    } catch {
+      // Keep the toggle responsive even if persistence fails.
+    }
+  };
+
+  const changeDefaultFilter = async (key) => {
+    setDefaultFilter(key);
+    try {
+      await SecureStore.setItemAsync('landlord_default_filter', key);
+    } catch {
+      // Preference applies for this session only.
+    }
+  };
 
   if (showInvite) {
     return <InviteCaretakerScreen onBack={() => setShowInvite(false)} />;
@@ -69,6 +137,10 @@ export default function SettingsScreen({ user, onLogout }) {
     );
   }
 
+  if (showHelpCenter) {
+    return <HelpCenterScreen navigation={{ goBack: () => setShowHelpCenter(false), navigate: () => {} }} />;
+  }
+
   const initials = (localUser?.name || 'L')
     .split(' ')
     .map(n => n[0])
@@ -80,6 +152,9 @@ export default function SettingsScreen({ user, onLogout }) {
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.pageTitle}>Settings</Text>
+        <Text style={styles.pageSubtitle}>
+          Manage notifications, payout account settings, and workspace preferences.
+        </Text>
 
         {/* Profile header */}
         <View style={styles.profileCard}>
@@ -139,11 +214,74 @@ export default function SettingsScreen({ user, onLogout }) {
           </TouchableOpacity>
         </View>
 
-        {/* App info */}
+        {/* Payout account */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Appearance</Text>
-          <View style={[styles.menuRow, { borderBottomWidth: 0 }]}>
-            <Text style={styles.menuRowText}>{isDark ? 'Dark Mode' : 'Light Mode'}</Text>
+          <Text style={styles.sectionTitle}>Payout Account</Text>
+          <Text style={styles.sectionHint}>Define where your rental deposits are wired.</Text>
+          <Text style={styles.fieldLabel}>M-Pesa Paybill / Number</Text>
+          <TextInput
+            style={styles.input}
+            value={payoutNumber}
+            onChangeText={(text) => { setPayoutNumber(text); setPayoutSaved(false); }}
+            placeholder="e.g. 0712345678"
+            placeholderTextColor={colors.textMuted}
+            keyboardType="phone-pad"
+          />
+          <TouchableOpacity style={styles.saveBtn} onPress={savePayout} activeOpacity={0.8}>
+            <Text style={styles.saveBtnText}>{payoutSaved ? 'Saved' : 'Save Details'}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Notification preferences */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Notifications</Text>
+          <Text style={styles.sectionHint}>Control the alerts sent when prospects scan posters.</Text>
+          <View style={styles.prefRow}>
+            <View style={styles.prefTextWrap}>
+              <Text style={styles.prefLabel}>New QR scan alerts</Text>
+              <Text style={styles.prefHint}>Send an email for every new QR scan</Text>
+            </View>
+            <Switch
+              value={notifPrefs.scanAlerts}
+              onValueChange={(v) => updateNotifPref('scanAlerts', v)}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={'#fff'}
+            />
+          </View>
+          <View style={styles.prefRow}>
+            <View style={styles.prefTextWrap}>
+              <Text style={styles.prefLabel}>Weekly performance summary</Text>
+              <Text style={styles.prefHint}>Views, inquiries and revenue each week</Text>
+            </View>
+            <Switch
+              value={notifPrefs.weeklySummary}
+              onValueChange={(v) => updateNotifPref('weeklySummary', v)}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={'#fff'}
+            />
+          </View>
+          <View style={[styles.prefRow, { borderBottomWidth: 0 }]}>
+            <View style={styles.prefTextWrap}>
+              <Text style={styles.prefLabel}>Agent request alerts</Text>
+              <Text style={styles.prefHint}>When an agent asks to manage your listings</Text>
+            </View>
+            <Switch
+              value={notifPrefs.agentRequests}
+              onValueChange={(v) => updateNotifPref('agentRequests', v)}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={'#fff'}
+            />
+          </View>
+        </View>
+
+        {/* Workspace preferences */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Workspace Preferences</Text>
+          <View style={styles.prefRow}>
+            <View style={styles.prefTextWrap}>
+              <Text style={styles.prefLabel}>{isDark ? 'Dark Mode' : 'Light Mode'}</Text>
+              <Text style={styles.prefHint}>Appearance across the whole app</Text>
+            </View>
             <Switch
               value={isDark}
               onValueChange={toggleTheme}
@@ -151,6 +289,38 @@ export default function SettingsScreen({ user, onLogout }) {
               thumbColor={'#fff'}
             />
           </View>
+          <Text style={[styles.fieldLabel, { marginTop: Spacing.two }]}>Default dashboard filter</Text>
+          <View style={styles.chipRow}>
+            {[
+              { key: 'all', label: 'All' },
+              { key: 'approved', label: 'Approved' },
+              { key: 'pending', label: 'Pending' },
+              { key: 'booked', label: 'Booked' },
+            ].map(option => {
+              const active = defaultFilter === option.key;
+              return (
+                <TouchableOpacity
+                  key={option.key}
+                  style={[styles.chip, active && styles.chipActive]}
+                  onPress={() => changeDefaultFilter(option.key)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Help & Support */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Help & Support</Text>
+          <TouchableOpacity style={[styles.menuRow, { borderBottomWidth: 0 }]} onPress={() => setShowHelpCenter(true)}>
+            <Text style={styles.menuRowText}>Help Center</Text>
+            <Text style={styles.menuRowChevron}>›</Text>
+          </TouchableOpacity>
         </View>
 
         {/* About */}
@@ -184,7 +354,13 @@ const getStyles = (colors) => StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
     marginTop: Spacing.two,
+    marginBottom: Spacing.one,
+  },
+  pageSubtitle: {
+    fontSize: FontSize.sm,
+    color: colors.textSecondary,
     marginBottom: Spacing.three,
+    lineHeight: 18,
   },
   profileCard: {
     backgroundColor: colors.backgroundElement,
@@ -258,6 +434,84 @@ const getStyles = (colors) => StyleSheet.create({
     fontSize: FontSize.sm,
     color: colors.textSecondary,
   },
+  sectionHint: {
+    fontSize: FontSize.sm,
+    color: colors.textMuted,
+    lineHeight: 17,
+    marginBottom: Spacing.two,
+  },
+  fieldLabel: {
+    fontSize: FontSize.xs,
+    fontWeight: '700',
+    color: colors.textSecondary,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: BorderRadius.md,
+    backgroundColor: colors.background,
+    color: colors.text,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: FontSize.base,
+  },
+  saveBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: BorderRadius.md,
+    paddingVertical: 11,
+    alignItems: 'center',
+    marginTop: Spacing.two,
+  },
+  saveBtnText: {
+    color: '#fff',
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+  },
+  prefRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingVertical: Spacing.two,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  prefTextWrap: { flex: 1 },
+  prefLabel: {
+    fontSize: FontSize.base,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  prefHint: {
+    fontSize: FontSize.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  chipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  chipText: {
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  chipTextActive: { color: '#fff' },
   logoutBtn: {
     borderWidth: 1,
     borderColor: colors.danger,

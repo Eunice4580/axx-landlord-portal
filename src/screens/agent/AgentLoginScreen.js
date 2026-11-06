@@ -9,7 +9,7 @@ import { EyeIcon, EyeOffIcon, ArrowLeftIcon, AlertIcon, CheckIcon } from './Agen
 import { useTheme } from '../../context/ThemeContext';
 import { Spacing, BorderRadius, FontSize } from '../../constants/theme';
 
-const ACCENT = '#fbbf24';  // amber — agent brand color
+const ACCENT = '#e11d48';  // amber — agent brand color
 const API_BASE = 'https://axx-spaces-backend-1.onrender.com/api';
 
 export default function AgentLoginScreen({ onLoginSuccess, onBack, onCreateAccount }) {
@@ -98,7 +98,7 @@ export default function AgentLoginScreen({ onLoginSuccess, onBack, onCreateAccou
             </View>
             {msg.text ? (
               <View style={[s.msgBox, msg.ok ? s.msgOk : s.msgErr]}>
-                {msg.ok ? <CheckIcon color="#22c55e" size={14} /> : <AlertIcon color="#ef4444" size={14} />}
+                {msg.ok ? <CheckIcon color="#1e3a5f" size={14} /> : <AlertIcon color="#ef4444" size={14} />}
                 <Text style={s.msgText}> {msg.text}</Text>
               </View>
             ) : null}
@@ -139,7 +139,7 @@ export default function AgentLoginScreen({ onLoginSuccess, onBack, onCreateAccou
           {/* Inline message */}
           {msg.text ? (
             <View style={[s.msgBox, msg.ok ? s.msgOk : s.msgErr]}>
-              {msg.ok ? <CheckIcon color="#22c55e" size={14} /> : <AlertIcon color="#ef4444" size={14} />}
+              {msg.ok ? <CheckIcon color="#1e3a5f" size={14} /> : <AlertIcon color="#ef4444" size={14} />}
               <Text style={s.msgText}> {msg.text}</Text>
             </View>
           ) : null}

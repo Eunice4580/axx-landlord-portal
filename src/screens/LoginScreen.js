@@ -169,7 +169,7 @@ export default function LoginScreen({ onLoginSuccess, onBack, onCreateAccount })
           {/* Inline message */}
           {msg.text ? (
             <View style={[s.msgBox, msg.ok ? s.msgOk : s.msgErr]}>
-              <AlertIcon color={msg.ok ? '#22c55e' : '#ef4444'} size={14} />
+              <AlertIcon color={msg.ok ? '#1e3a5f' : '#ef4444'} size={14} />
               <Text style={s.msgText}> {msg.text}</Text>
             </View>
           ) : null}

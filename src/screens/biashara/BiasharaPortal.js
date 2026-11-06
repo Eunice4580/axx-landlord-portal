@@ -15,7 +15,7 @@ import RegisterBusinessScreen from './RegisterBusinessScreen';
 import BiasharaRegisterScreen from './BiasharaRegisterScreen';
 import { GridIcon, StoreIcon, UserIcon, BarChartIcon } from './Icons';
 
-const ACCENT = '#fbbf24';
+const ACCENT = '#e11d48';
 
 const TABS = [
   { key: 'overview',   label: 'Overview',    Icon: GridIcon       },
@@ -276,6 +276,7 @@ export default function BiasharaPortal({ onBackToPortalSelector }) {
           user={shownUser}
           onLogout={handleLogout}
           onProfileUpdated={handleProfileUpdated}
+          onNavigateToListings={() => setActiveTab('listings')}
         />
       </View>
 

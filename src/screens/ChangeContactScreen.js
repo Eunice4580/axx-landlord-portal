@@ -10,6 +10,7 @@ import {
   Image,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import ImageCropModal from '../components/ImageCropModal';
 import { profileUpdateAPI } from '../services/api';
 import { Spacing } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
@@ -19,6 +20,7 @@ export default function ChangeContactScreen({ user, onBack, onUpdated }) {
   const [phone, setPhone] = useState(user?.phone || '');
   const [avatarUri, setAvatarUri] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [cropModal, setCropModal] = useState({ visible: false, uri: null, width: 0, height: 0 });
   const { colors } = useTheme();
   const styles = getStyles(colors);
 
@@ -30,12 +32,11 @@ export default function ChangeContactScreen({ user, onBack, onUpdated }) {
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
+      quality: 1,
     });
-    if (!result.canceled) {
-      setAvatarUri(result.assets[0].uri);
+    if (!result.canceled && result.assets?.[0]) {
+      const { uri, width, height } = result.assets[0];
+      setCropModal({ visible: true, uri, width: width || 1000, height: height || 1000 });
     }
   };
 
@@ -107,6 +108,18 @@ export default function ChangeContactScreen({ user, onBack, onUpdated }) {
           <Text style={styles.buttonText}>Save Changes</Text>
         )}
       </TouchableOpacity>
+
+      <ImageCropModal
+        visible={cropModal.visible}
+        imageUri={cropModal.uri}
+        imageWidth={cropModal.width}
+        imageHeight={cropModal.height}
+        onDone={(uri) => {
+          setAvatarUri(uri);
+          setCropModal({ visible: false, uri: null, width: 0, height: 0 });
+        }}
+        onCancel={() => setCropModal({ visible: false, uri: null, width: 0, height: 0 })}
+      />
     </View>
   );
 }

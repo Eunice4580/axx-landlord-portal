@@ -27,8 +27,8 @@ const C = {
   errorBorder:  '#ef4444',
   errorText:    '#ef4444',
   successBg:    'rgba(34, 197, 94, 0.15)',
-  successBorder:'#22c55e',
-  successText:  '#22c55e',
+  successBorder:'#1e3a5f',
+  successText:  '#1e3a5f',
   divider:      'rgba(255,255,255,0.1)',
   linkText:     '#60a5fa',
 };
@@ -77,7 +77,7 @@ export default function BiasharaRegisterScreen({ onRegisterSuccess, onBack }) {
           email: form.email.trim(),
           phone: form.phone.trim(),
           password: form.password,
-          role: 'user',
+          role: 'business',
         }),
       });
       const data = await res.json();
@@ -87,7 +87,7 @@ export default function BiasharaRegisterScreen({ onRegisterSuccess, onBack }) {
       const loginRes = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: form.email.trim(), password: form.password }),
+        body: JSON.stringify({ email: form.email.trim(), password: form.password, role: 'business' }),
       });
       const loginData = await loginRes.json();
 
@@ -96,8 +96,12 @@ export default function BiasharaRegisterScreen({ onRegisterSuccess, onBack }) {
         setSuccess('Account created! Taking you to your dashboard...');
         setTimeout(() => onRegisterSuccess(loginData.user), 1500);
       } else {
-        setSuccess('Account created! Please log in.');
-        setTimeout(() => onBack(), 2000);
+        setSuccess(
+          loginData?.requiresVerification
+            ? 'Account created! Check your inbox to verify your email, then log in.'
+            : 'Account created! Please log in.'
+        );
+        setTimeout(() => onBack(), 2500);
       }
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');

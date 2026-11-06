@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { TouchableOpacity, Text, ActivityIndicator, Alert } from 'react-native';
 import { getCurrentPlace, matchCounty } from '../utils/currentPlace';
 
-export default function LocateButton({ counties = [], onFound, accent = '#fbbf24', textColor = '#d97706' }) {
+export default function LocateButton({ counties = [], onFound, accent = '#e11d48', textColor = '#1e3a5f' }) {
   const [loading, setLoading] = useState(false);
 
   const detect = async () => {
@@ -33,7 +33,7 @@ export default function LocateButton({ counties = [], onFound, accent = '#fbbf24
     >
       {loading ? <ActivityIndicator size="small" color={textColor} /> : null}
       <Text style={{ color: textColor, fontWeight: '700', fontSize: 14 }}>
-        {loading ? 'Detecting location…' : '📍 Use my current location'}
+        {loading ? 'Detecting location…' : 'Use my current location'}
       </Text>
     </TouchableOpacity>
   );

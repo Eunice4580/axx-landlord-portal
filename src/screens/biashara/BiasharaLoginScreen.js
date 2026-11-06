@@ -10,7 +10,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { Spacing, BorderRadius, FontSize } from '../../constants/theme';
 import { ArrowLeftIcon, EyeIcon, EyeOffIcon, CheckIcon, AlertIcon, StoreIcon } from './Icons';
 
-const ACCENT = '#fbbf24';
+const ACCENT = '#e11d48';
 
 export default function BiasharaLoginScreen({ onLoginSuccess, onBack, onCreateAccount }) {
   const { colors } = useTheme();
@@ -80,7 +80,7 @@ export default function BiasharaLoginScreen({ onLoginSuccess, onBack, onCreateAc
             </View>
             {msg.text ? (
               <View style={[s.msgBox, msg.isSuccess ? s.msgSuccess : s.msgError]}>
-                {msg.isSuccess ? <CheckIcon color="#22c55e" size={15} /> : <AlertIcon color="#ef4444" size={15} />}
+                {msg.isSuccess ? <CheckIcon color="#1e3a5f" size={15} /> : <AlertIcon color="#ef4444" size={15} />}
                 <Text style={s.msgText}> {msg.text}</Text>
               </View>
             ) : null}
@@ -120,7 +120,7 @@ export default function BiasharaLoginScreen({ onLoginSuccess, onBack, onCreateAc
 
           {msg.text ? (
             <View style={[s.msgBox, msg.isSuccess ? s.msgSuccess : s.msgError]}>
-              {msg.isSuccess ? <CheckIcon color="#22c55e" size={15} /> : <AlertIcon color="#ef4444" size={15} />}
+              {msg.isSuccess ? <CheckIcon color="#1e3a5f" size={15} /> : <AlertIcon color="#ef4444" size={15} />}
               <Text style={s.msgText}> {msg.text}</Text>
             </View>
           ) : null}

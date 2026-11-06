@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { AppState } from 'react-native';
 import {
+  AppState,
+  Image,
   View,
   Text,
   StyleSheet,
@@ -8,17 +9,27 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  Image,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { propertyAPI, updateBookedUnits } from '../services/api';
+import { useFocusEffect } from '@react-navigation/native';
+import * as SecureStore from 'expo-secure-store';
+import { propertyAPI, updateBookedUnits, agentRequestsAPI, notificationsAPI } from '../services/api';
+import { getReadNotificationIds, isNotificationRead } from '../utils/notificationReads';
 import QRStatsScreen from './QRStatsScreen';
 import QRGeneratorScreen from './QRGeneratorScreen';
 import EditPropertyScreen from './EditPropertyScreen';
 import PropertyDetailScreen from './PropertyDetailScreen';
+import WaitlistScreen from './WaitlistScreen';
+import AnalyticsScreen from './AnalyticsScreen';
+import EnquiriesScreen from './EnquiriesScreen';
+import AgentRequestsScreen from './AgentRequestsScreen';
+import BoostModal from './accommodation/BoostModal';
+import PlansModal from './accommodation/PlansModal';
 import { Spacing, BorderRadius, FontSize } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
+
+const GOLD = '#fbbf24';
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -28,8 +39,8 @@ const getGreeting = () => {
 };
 
 const STATUS_CONFIG = {
-  approved: { color: '#22c55e', label: 'Approved' },
-  pending:  { color: '#f59e0b', label: 'Pending' },
+  approved: { color: '#1e3a5f', label: 'Approved' },
+  pending:  { color: '#1e3a5f', label: 'Pending' },
   rejected: { color: '#ef4444', label: 'Rejected' },
 };
 
@@ -44,6 +55,15 @@ export default function DashboardScreen({ user, onLogout }) {
   const [promotePropertyTitle, setPromotePropertyTitle] = useState('');
   const [editingProperty, setEditingProperty] = useState(null);
   const [viewingProperty, setViewingProperty] = useState(null);
+  const [showWaitlist, setShowWaitlist] = useState(false);
+  const [waitlistPropertyId, setWaitlistPropertyId] = useState(null);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showEnquiries, setShowEnquiries] = useState(false);
+  const [showAgentRequests, setShowAgentRequests] = useState(false);
+  const [showPlans, setShowPlans] = useState(false);
+  const [boostTarget, setBoostTarget] = useState(null);
+  const [agentRequestCount, setAgentRequestCount] = useState(0);
+  const [waitlistAlertCount, setWaitlistAlertCount] = useState(0);
   const { colors } = useTheme();
   const styles = getStyles(colors);
 
@@ -59,17 +79,62 @@ export default function DashboardScreen({ user, onLogout }) {
     }
   }, []);
 
+  const loadAgentRequestCount = useCallback(async () => {
+    try {
+      const data = await agentRequestsAPI.getProviderRequests();
+      const list = Array.isArray(data) ? data : [];
+      setAgentRequestCount(list.filter(r => r.status === 'pending').length);
+    } catch {
+      // Non-critical: the dashboard still works without the badge.
+    }
+  }, []);
+
+  const loadWaitlistAlertCount = useCallback(async () => {
+    try {
+      const [res, readIds] = await Promise.all([
+        notificationsAPI.getMy(),
+        getReadNotificationIds(),
+      ]);
+      const unread = (res?.notifications || []).filter(
+        n => n.type === 'waitlist_request' && !isNotificationRead(n, readIds)
+      );
+      setWaitlistAlertCount(unread.length);
+    } catch {
+      // Non-critical badge: the dashboard still works without it.
+    }
+  }, []);
+
   // Auto-sync: properties deleted/changed on website update here automatically
   useEffect(() => {
     loadProperties();
+    loadAgentRequestCount();
+    loadWaitlistAlertCount();
     const appStateSub = AppState.addEventListener('change', s => {
-      if (s === 'active') loadProperties();
+      if (s === 'active') {
+        loadProperties();
+        loadWaitlistAlertCount();
+      }
     });
     const poll = setInterval(() => loadProperties(), 60000);
     return () => { appStateSub.remove(); clearInterval(poll); };
-  }, [loadProperties]);
+  }, [loadProperties, loadAgentRequestCount, loadWaitlistAlertCount]);
 
-  const onRefresh = () => { setRefreshing(true); loadProperties(); };
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadProperties();
+    loadAgentRequestCount();
+    loadWaitlistAlertCount();
+  };
+
+  // Apply the workspace preference saved in Settings each time the tab is opened.
+  useFocusEffect(
+    useCallback(() => {
+      SecureStore.getItemAsync('landlord_default_filter')
+        .then(value => { if (value) setFilter(value); })
+        .catch(() => {});
+      loadWaitlistAlertCount();
+    }, [loadWaitlistAlertCount])
+  );
 
   const handleUnitChange = async (propertyId, change) => {
     try {
@@ -87,16 +152,53 @@ export default function DashboardScreen({ user, onLogout }) {
     return sum + Math.max(0, (p.totalUnits || 1) - (p.bookedUnits || 0));
   }, 0);
 
+  const counts = {
+    all: properties.length,
+    pending,
+    approved,
+    booked: properties.filter(p => (p.bookedUnits || 0) > 0).length,
+    rejected: properties.filter(p => p.status === 'rejected').length,
+  };
+
   const FILTERS = [
     { key: 'all', label: 'All' },
     { key: 'approved', label: 'Approved' },
     { key: 'pending', label: 'Pending' },
+    { key: 'booked', label: 'Booked' },
     { key: 'rejected', label: 'Rejected' },
   ];
 
   const filtered = filter === 'all'
     ? properties
-    : properties.filter(p => p.status === filter);
+    : filter === 'booked'
+      ? properties.filter(p => (p.bookedUnits || 0) > 0)
+      : properties.filter(p => p.status === filter);
+
+  if (showAnalytics) {
+    return <AnalyticsScreen onBack={() => setShowAnalytics(false)} />;
+  }
+
+  if (showEnquiries) {
+    return <EnquiriesScreen onBack={() => setShowEnquiries(false)} />;
+  }
+
+  if (showAgentRequests) {
+    return (
+      <AgentRequestsScreen
+        onBack={() => { setShowAgentRequests(false); loadAgentRequestCount(); }}
+      />
+    );
+  }
+
+  if (showWaitlist) {
+    return (
+      <WaitlistScreen
+        onBack={() => { setShowWaitlist(false); setWaitlistPropertyId(null); loadWaitlistAlertCount(); }}
+        mode="landlord"
+        propertyId={waitlistPropertyId}
+      />
+    );
+  }
 
   if (qrPropertyId) {
     return (
@@ -195,22 +297,30 @@ export default function DashboardScreen({ user, onLogout }) {
             </Text>
           ) : null}
 
-          {/* Occupancy bar */}
-          <View style={styles.occupancyRow}>
-            <Text style={styles.occupancyLabel}>
-              {available}/{total} units available
-            </Text>
-            <Text style={styles.occupancyPct}>{occupancyPct}%</Text>
+          {/* Units available + occupancy */}
+          <View style={styles.unitsRow}>
+            <View style={styles.unitBox}>
+              <Text style={[styles.unitNum, { color: available > 0 ? colors.success : colors.danger }]}>
+                {available}
+              </Text>
+              <Text style={[styles.unitLbl, { color: colors.textSecondary }]}>Available Units</Text>
+            </View>
+            <Text style={[styles.occupancyPct, { color: colors.textMuted }]}>{occupancyPct}%</Text>
           </View>
           <View style={styles.progressTrack}>
             <View style={[
               styles.progressFill,
               {
                 width: `${occupancyPct}%`,
-                backgroundColor: fullyBooked ? colors.danger : colors.primary,
+                backgroundColor: fullyBooked ? colors.danger : colors.success,
               },
             ]} />
           </View>
+          <Text style={styles.progressLabel}>
+            {fullyBooked
+              ? 'All units booked — hidden from searches'
+              : `${available} of ${total} units active to rent`}
+          </Text>
 
           {/* Unit actions — only for approved */}
           {item.status === 'approved' && (
@@ -249,15 +359,31 @@ export default function DashboardScreen({ user, onLogout }) {
                 setPromotePropertyTitle(item.title);
               }}
             >
-              <Text style={styles.promoteButtonText}>Promote</Text>
+              <Text style={styles.promoteButtonText}>Poster / QR</Text>
             </TouchableOpacity>
           </View>
+
+          {item.status === 'approved' && (
+            <TouchableOpacity
+              style={styles.boostButton}
+              onPress={() => setBoostTarget(item)}
+            >
+              <Text style={styles.boostButtonText}>Boost Property</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={styles.editButton}
             onPress={() => setEditingProperty(item)}
           >
-            <Text style={styles.editButtonText}>Edit Property</Text>
+            <Text style={styles.editButtonText}>Edit Details &amp; Images</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.waitlistButton}
+            onPress={() => { setWaitlistPropertyId(item._id); setShowWaitlist(true); }}
+          >
+            <Text style={styles.waitlistButtonText}>View Waitlist</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -275,17 +401,29 @@ export default function DashboardScreen({ user, onLogout }) {
           <View>
             {/* Header */}
             <View style={styles.header}>
-              <View>
-                <Text style={styles.greeting}>{getGreeting()},</Text>
-                <Text style={styles.userName}>{user?.name || 'Landlord'}</Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <TouchableOpacity onPress={onLogout}>
-                  <Text style={styles.headerLogoutText}>Logout</Text>
-                </TouchableOpacity>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{initials}</Text>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <View style={styles.greetingRow}>
+                  <Text style={styles.greeting}>{getGreeting()},</Text>
+                  <View style={[styles.portalPill, { borderColor: colors.primary + '50', backgroundColor: colors.primary + '12' }]}>
+                    <Text style={[styles.portalPillText, { color: colors.primary }]}>LANDLORD PORTAL</Text>
+                  </View>
                 </View>
+                <Text style={styles.userName} numberOfLines={1}>{user?.name || 'Landlord'}</Text>
+              </View>
+              <View style={styles.headerActions}>
+                <TouchableOpacity
+                  style={[styles.plansButton, { borderColor: GOLD + '70', backgroundColor: GOLD + '15' }]}
+                  onPress={() => setShowPlans(true)}
+                >
+                  <Text style={[styles.plansButtonText, { color: '#92400e' }]}>Plans</Text>
+                </TouchableOpacity>
+                {user?.profileImage ? (
+                  <Image source={{ uri: user.profileImage }} style={styles.avatar} />
+                ) : (
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{initials}</Text>
+                  </View>
+                )}
               </View>
             </View>
 
@@ -309,6 +447,57 @@ export default function DashboardScreen({ user, onLogout }) {
               </View>
             </View>
 
+            {/* Portfolio tools */}
+            <View style={styles.toolsGrid}>
+              <TouchableOpacity
+                style={styles.toolCard}
+                onPress={() => setShowAnalytics(true)}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.toolLabel}>Performance</Text>
+                <Text style={styles.toolCaption}>Views, inquiries &amp; revenue</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.toolCard}
+                onPress={() => setShowEnquiries(true)}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.toolLabel}>Enquiries</Text>
+                <Text style={styles.toolCaption}>Poster QR scan leads</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.toolCard}
+                onPress={() => { setWaitlistPropertyId(null); setShowWaitlist(true); }}
+                activeOpacity={0.75}
+              >
+                {waitlistAlertCount > 0 && (
+                  <View style={[styles.alertDot, { backgroundColor: colors.danger }]} />
+                )}
+                <Text style={styles.toolLabel}>Waitlist</Text>
+                <Text style={styles.toolCaption}>People waiting for units</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.toolCard}
+                onPress={() => setShowAgentRequests(true)}
+                activeOpacity={0.75}
+              >
+                <View style={styles.toolLabelRow}>
+                  <Text style={styles.toolLabel}>Agent Requests</Text>
+                  {agentRequestCount > 0 && (
+                    <View style={[styles.toolBadge, { backgroundColor: colors.primary }]}>
+                      <Text style={styles.toolBadgeText}>{agentRequestCount}</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.toolCaption}>
+                  {agentRequestCount > 0 ? `${agentRequestCount} awaiting response` : 'Manage agent access'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
             {/* Filter tabs */}
             <View style={styles.filterRow}>
               {FILTERS.map(f => (
@@ -318,13 +507,16 @@ export default function DashboardScreen({ user, onLogout }) {
                   onPress={() => setFilter(f.key)}
                 >
                   <Text style={[styles.filterTabText, filter === f.key && styles.filterTabTextActive]}>
-                    {f.label}
+                    {f.label} ({counts[f.key] || 0})
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
             <Text style={styles.sectionTitle}>Your Properties</Text>
+            <Text style={styles.sectionSub}>
+              Manage your listed rentals, monitor occupancy, and promote vacancies.
+            </Text>
           </View>
         }
         ListEmptyComponent={
@@ -334,6 +526,26 @@ export default function DashboardScreen({ user, onLogout }) {
           </View>
         }
         renderItem={renderProperty}
+      />
+
+      <BoostModal
+        visible={!!boostTarget}
+        listing={boostTarget}
+        tokenKey="token"
+        listingType="Property"
+        onClose={() => setBoostTarget(null)}
+        onSuccess={() => {
+          setBoostTarget(null);
+          Alert.alert('M-Pesa prompt sent', 'Enter your M-Pesa PIN to activate the boost.');
+        }}
+      />
+
+      <PlansModal
+        visible={showPlans}
+        tokenKey="token"
+        role="landlord"
+        onClose={() => setShowPlans(false)}
+        onSuccess={() => Alert.alert('M-Pesa prompt sent', 'Your plan activates after payment.')}
       />
     </SafeAreaView>
   );
@@ -361,15 +573,49 @@ const getStyles = (colors) => StyleSheet.create({
     alignItems: 'center',
     paddingTop: Spacing.four,
     paddingBottom: Spacing.three,
+    gap: 8,
+  },
+  greetingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 3,
   },
   greeting: {
     fontSize: FontSize.base,
     color: colors.textSecondary,
   },
+  portalPill: {
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  portalPillText: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
   userName: {
     fontSize: FontSize['2xl'],
     fontWeight: '700',
     color: colors.text,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  plansButton: {
+    borderWidth: 1,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  plansButtonText: {
+    fontSize: 11,
+    fontWeight: '800',
   },
   avatar: {
     width: 42,
@@ -378,11 +624,6 @@ const getStyles = (colors) => StyleSheet.create({
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  headerLogoutText: {
-    color: colors.danger,
-    fontSize: 13,
-    fontWeight: '600',
   },
   avatarText: {
     color: '#fff',
@@ -413,6 +654,59 @@ const getStyles = (colors) => StyleSheet.create({
     fontSize: FontSize.xs,
     color: colors.textSecondary,
     marginTop: 2,
+  },
+  // Portfolio tools
+  toolsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+    marginBottom: Spacing.three,
+  },
+  toolCard: {
+    flexGrow: 1,
+    flexBasis: '47%',
+    backgroundColor: colors.backgroundElement,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: Spacing.three,
+  },
+  toolLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 6,
+  },
+  alertDot: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  toolLabel: {
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  toolCaption: {
+    fontSize: 10,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  toolBadge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  toolBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '800',
   },
   // Filter tabs
   filterRow: {
@@ -446,6 +740,11 @@ const getStyles = (colors) => StyleSheet.create({
     fontSize: FontSize.lg,
     fontWeight: '700',
     color: colors.text,
+  },
+  sectionSub: {
+    fontSize: FontSize.sm,
+    color: colors.textSecondary,
+    marginTop: 2,
     marginBottom: Spacing.three,
   },
   // Property card
@@ -502,31 +801,44 @@ const getStyles = (colors) => StyleSheet.create({
     color: colors.textMuted,
     marginBottom: Spacing.two,
   },
-  occupancyRow: {
+  unitsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'baseline',
     marginTop: Spacing.two,
     marginBottom: 5,
   },
-  occupancyLabel: {
-    fontSize: FontSize.sm,
-    color: colors.textSecondary,
+  unitBox: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+  },
+  unitNum: {
+    fontSize: FontSize.lg,
+    fontWeight: '700',
+  },
+  unitLbl: {
+    fontSize: FontSize.xs,
   },
   occupancyPct: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
     fontWeight: '600',
-    color: colors.textSecondary,
   },
   progressTrack: {
     height: 4,
     backgroundColor: colors.border,
     borderRadius: 2,
     overflow: 'hidden',
-    marginBottom: Spacing.three,
+    marginBottom: 5,
   },
   progressFill: {
     height: '100%',
     borderRadius: 2,
+  },
+  progressLabel: {
+    fontSize: FontSize.xs,
+    color: colors.textMuted,
+    marginBottom: Spacing.three,
   },
   actionRow: {
     flexDirection: 'row',
@@ -560,6 +872,18 @@ const getStyles = (colors) => StyleSheet.create({
     fontWeight: '600',
     fontSize: 13,
   },
+  boostButton: {
+    backgroundColor: GOLD,
+    borderRadius: 8,
+    paddingVertical: 11,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  boostButtonText: {
+    color: '#1f2937',
+    fontWeight: '800',
+    fontSize: 13,
+  },
   editButton: {
     borderWidth: 1,
     borderColor: colors.textSecondary,
@@ -572,6 +896,18 @@ const getStyles = (colors) => StyleSheet.create({
     color: colors.text,
     fontWeight: '600',
     fontSize: 13,
+  },
+  waitlistButton: {
+    backgroundColor: '#1e3a8a',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  waitlistButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
   },
   qrButtonText: {
     color: colors.primary,

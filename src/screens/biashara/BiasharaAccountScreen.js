@@ -7,6 +7,36 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as SecureStore from 'expo-secure-store';
+import ImageCropModal from '../../components/ImageCropModal';
+import HelpCenterScreen from '../support/HelpCenterScreen';
+
+const BIASHARA_TIPS = [
+  {
+    id: 'b1',
+    question: 'How do I add a new business listing?',
+    answer: 'Go to the My Businesses tab and tap "Register Business". Fill in your business name, category, description, location and contact details.',
+  },
+  {
+    id: 'b2',
+    question: 'How do I edit my business details?',
+    answer: 'Open the business from My Businesses, tap the Edit button. You can update any detail including photos, contact info and working hours.',
+  },
+  {
+    id: 'b3',
+    question: 'How do I add or change my business photos?',
+    answer: 'When editing a business, scroll to the Photos section and tap "Add Photo". You can upload from your gallery or take a new photo.',
+  },
+  {
+    id: 'b4',
+    question: 'Why is my business not appearing in search?',
+    answer: 'Make sure your listing is published and the category is correctly set. It can take a few minutes after publishing for it to appear in search results.',
+  },
+  {
+    id: 'b5',
+    question: 'Can I manage multiple businesses?',
+    answer: 'Yes. You can register and manage as many businesses as you need from the same account. Each appears separately in your My Businesses tab.',
+  },
+];
 import { biasharaProfileAPI } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { Spacing, BorderRadius, FontSize } from '../../constants/theme';
@@ -16,7 +46,7 @@ import {
   ArrowLeftIcon, EditIcon, SunIcon, MoonIcon,
 } from './Icons';
 
-const ACCENT = '#fbbf24';
+const ACCENT = '#e11d48';
 const API_BASE = 'https://axx-spaces-backend-1.onrender.com/api';
 
 const CATEGORIES = [
@@ -30,7 +60,7 @@ function MsgBanner({ msg }) {
   if (!msg.text) return null;
   return (
     <View style={[styles.msgBox, msg.isSuccess ? styles.msgSuccess : styles.msgError]}>
-      {msg.isSuccess ? <CheckIcon color="#22c55e" size={14} /> : <AlertIcon color="#ef4444" size={14} />}
+      {msg.isSuccess ? <CheckIcon color="#1e3a5f" size={14} /> : <AlertIcon color="#ef4444" size={14} />}
       <Text style={styles.msgText}> {msg.text}</Text>
     </View>
   );
@@ -160,12 +190,19 @@ function EditProfileView({ user, colors, onDone, onProfileSaved }) {
   const [avatarUri, setAvatarUri] = useState(null);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState({ text: '', isSuccess: false });
+  const [cropModal, setCropModal] = useState({ visible: false, uri: null, width: 0, height: 0 });
 
   const pickAvatar = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Permission needed', 'Allow photo access to change your profile picture.'); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8, allowsEditing: true, aspect: [1, 1] });
-    if (!result.canceled) setAvatarUri(result.assets[0].uri);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 1,
+    });
+    if (!result.canceled && result.assets?.[0]) {
+      const { uri, width, height } = result.assets[0];
+      setCropModal({ visible: true, uri, width: width || 1000, height: height || 1000 });
+    }
   };
 
   const handleSave = () => {
@@ -223,40 +260,54 @@ function EditProfileView({ user, colors, onDone, onProfileSaved }) {
   const avatarDisplay = avatarUri || user?.profileImage || user?.avatar;
 
   return (
-    <View style={[styles.formCard, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
-      <Text style={[styles.formCardTitle, { color: colors.text }]}>Edit Profile</Text>
-      <MsgBanner msg={msg} />
+    <>
+      <View style={[styles.formCard, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
+        <Text style={[styles.formCardTitle, { color: colors.text }]}>Edit Profile</Text>
+        <MsgBanner msg={msg} />
 
-      {/* Avatar picker */}
-      <TouchableOpacity style={styles.avatarPickerRow} onPress={pickAvatar}>
-        {avatarDisplay
-          ? <Image source={{ uri: avatarDisplay }} style={styles.avatarPreview} />
-          : <View style={[styles.avatarPlaceholder, { backgroundColor: ACCENT }]}>
-              <Text style={styles.avatarInitialLg}>{(user?.name || 'U').charAt(0).toUpperCase()}</Text>
-            </View>}
-        <View style={[styles.avatarEditBadge, { backgroundColor: ACCENT }]}>
-          <UserIcon color="#0f172a" size={12} />
+        {/* Avatar picker */}
+        <TouchableOpacity style={styles.avatarPickerRow} onPress={pickAvatar}>
+          {avatarDisplay
+            ? <Image source={{ uri: avatarDisplay }} style={styles.avatarPreview} />
+            : <View style={[styles.avatarPlaceholder, { backgroundColor: ACCENT }]}>
+                <Text style={styles.avatarInitialLg}>{(user?.name || 'U').charAt(0).toUpperCase()}</Text>
+              </View>}
+          <View style={[styles.avatarEditBadge, { backgroundColor: ACCENT }]}>
+            <UserIcon color="#0f172a" size={12} />
+          </View>
+          <Text style={[styles.avatarPickerHint, { color: colors.textMuted }]}>Tap to change photo</Text>
+        </TouchableOpacity>
+
+        <Field label="FULL NAME *" colors={colors}>
+          <InputBox colors={colors} placeholder="Your full name" value={name} onChangeText={setName} />
+        </Field>
+        <Field label="PHONE NUMBER" colors={colors}>
+          <InputBox colors={colors} placeholder="+254 7XX XXX XXX" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+        </Field>
+        <Field label="COUNTY" colors={colors}>
+          <InputBox colors={colors} placeholder="e.g. Nairobi City" value={county} onChangeText={setCounty} />
+        </Field>
+
+        <View style={[styles.readonlyRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
+          <Text style={[styles.readonlyLabel, { color: colors.textMuted }]}>EMAIL (cannot change here)</Text>
+          <Text style={[styles.readonlyValue, { color: colors.textSecondary }]}>{user?.email || '—'}</Text>
         </View>
-        <Text style={[styles.avatarPickerHint, { color: colors.textMuted }]}>Tap to change photo</Text>
-      </TouchableOpacity>
 
-      <Field label="FULL NAME *" colors={colors}>
-        <InputBox colors={colors} placeholder="Your full name" value={name} onChangeText={setName} />
-      </Field>
-      <Field label="PHONE NUMBER" colors={colors}>
-        <InputBox colors={colors} placeholder="+254 7XX XXX XXX" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-      </Field>
-      <Field label="COUNTY" colors={colors}>
-        <InputBox colors={colors} placeholder="e.g. Nairobi City" value={county} onChangeText={setCounty} />
-      </Field>
-
-      <View style={[styles.readonlyRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
-        <Text style={[styles.readonlyLabel, { color: colors.textMuted }]}>EMAIL (cannot change here)</Text>
-        <Text style={[styles.readonlyValue, { color: colors.textSecondary }]}>{user?.email || '—'}</Text>
+        <FormButtons onCancel={onDone} onSave={handleSave} loading={loading} colors={colors} />
       </View>
 
-      <FormButtons onCancel={onDone} onSave={handleSave} loading={loading} colors={colors} />
-    </View>
+      <ImageCropModal
+        visible={cropModal.visible}
+        imageUri={cropModal.uri}
+        imageWidth={cropModal.width}
+        imageHeight={cropModal.height}
+        onDone={(uri) => {
+          setAvatarUri(uri);
+          setCropModal({ visible: false, uri: null, width: 0, height: 0 });
+        }}
+        onCancel={() => setCropModal({ visible: false, uri: null, width: 0, height: 0 })}
+      />
+    </>
   );
 }
 
@@ -379,7 +430,8 @@ function EditBusinessView({ business, colors, onDone }) {
 }
 
 // ── Main Account Screen ───────────────────────────────────────────
-export default function BiasharaAccountScreen({ user, onLogout, onProfileUpdated }) {
+export default function BiasharaAccountScreen({ user, onLogout, onProfileUpdated, onNavigateToListings }) {
+  const [showHelpCenter, setShowHelpCenter] = useState(false);
   const { colors, isDark, toggleTheme } = useTheme();
   const [view, setView] = useState('main');
   // Local copy of user — updated immediately on save so the Account tab
@@ -405,6 +457,10 @@ export default function BiasharaAccountScreen({ user, onLogout, onProfileUpdated
   const displayName = localUser?.name || 'Business Owner';
   const email = localUser?.email || '';
   const avatarUrl = localUser?.profileImage || localUser?.avatar;
+
+  if (showHelpCenter) {
+    return <HelpCenterScreen navigation={{ goBack: () => setShowHelpCenter(false) }} tips={BIASHARA_TIPS} />;
+  }
 
   const confirmLogout = () =>
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -504,7 +560,7 @@ export default function BiasharaAccountScreen({ user, onLogout, onProfileUpdated
                 {/* My Businesses (pointer) */}
                 <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>MY BUSINESSES</Text>
                 <View style={[styles.menuCard, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
-                  <View style={styles.menuRow}>
+                  <TouchableOpacity style={styles.menuRow} onPress={onNavigateToListings} activeOpacity={0.7}>
                     <View style={[styles.menuIcon, { backgroundColor: ACCENT + '15' }]}>
                       <StoreIcon color={ACCENT} size={18} />
                     </View>
@@ -512,7 +568,14 @@ export default function BiasharaAccountScreen({ user, onLogout, onProfileUpdated
                       <Text style={[styles.menuLabel, { color: colors.text }]}>Manage Businesses</Text>
                       <Text style={[styles.menuSub, { color: colors.textMuted }]}>Edit, delete or boost listings in the My Businesses tab</Text>
                     </View>
-                  </View>
+                    <ChevronRightIcon color={colors.textMuted} size={16} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Help Center */}
+                <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>SUPPORT</Text>
+                <View style={[styles.menuCard, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
+                  <SectionRow Icon={AlertIcon} label="Help Center" sub="Contact us & quick tips" onPress={() => setShowHelpCenter(true)} colors={colors} />
                 </View>
 
                 {/* Session */}
