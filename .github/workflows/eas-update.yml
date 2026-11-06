@@ -44,5 +44,11 @@ jobs:
 
       - name: Publish update to production channel
         env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
-        run: eas update --channel production --non-interactive --message "$COMMIT_MESSAGE"
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::EXPO_TOKEN secret is missing. Add it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          eas update --channel production --non-interactive --message "$COMMIT_MESSAGE"
