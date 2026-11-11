@@ -189,6 +189,30 @@ export const notificationsAPI = {
   markRead: (id) => apiCall(`/notifications/${id}/read`, { method: 'PUT' }),
 };
 
+// ── Listing conversations (owner <-> user chat) ───────────────────────────────
+export const conversationsAPI = {
+  list: () => apiCall('/conversations'),
+  summary: () => apiCall('/conversations/summary'),
+  start: ({ contextType, contextId, recipientId, message }) =>
+    apiCall('/conversations', {
+      method: 'POST',
+      body: JSON.stringify({ contextType, contextId, recipientId, message }),
+    }),
+  messages: (conversationId, before) =>
+    apiCall(
+      `/conversations/${conversationId}/messages${before ? `?before=${encodeURIComponent(before)}` : ''}`
+    ),
+  send: (conversationId, text) =>
+    apiCall(`/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    }),
+  markRead: (conversationId) =>
+    apiCall(`/conversations/${conversationId}/read`, { method: 'PUT' }),
+  archive: (conversationId) =>
+    apiCall(`/conversations/${conversationId}`, { method: 'DELETE' }),
+};
+
 // ── Waitlist API ───────────────────────────────────────────────────────────────
 export const waitlistAPI = {
   // Landlord: get all waitlist entries across all their properties (FIFO ordered)

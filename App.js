@@ -16,10 +16,12 @@ import CaretakerDashboardScreen from './src/screens/CaretakerDashboardScreen';
 import AddPropertyScreen from './src/screens/AddPropertyScreen';
 import PaymentsScreen from './src/screens/PaymentsScreen';
 import MessagesScreen from './src/screens/MessagesScreen';
+import ChatInboxScreen from './src/screens/ChatInboxScreen';
+import ChatThreadScreen from './src/screens/ChatThreadScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { userAPI } from './src/services/api';
+import { userAPI, conversationsAPI } from './src/services/api';
 import { View, ActivityIndicator } from 'react-native';
 import * as Linking from 'expo-linking';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
@@ -27,6 +29,7 @@ import AccommodationDetailScreen from './src/screens/accommodation/Accommodation
 
 const Tab = createBottomTabNavigator();
 const AccomStack = createNativeStackNavigator();
+const MessagesStack = createNativeStackNavigator();
 
 // Simple SVG-free tab icons using Text (clean, no library needed)
 const TabIcon = ({ label, focused, colors }) => (
@@ -34,9 +37,50 @@ const TabIcon = ({ label, focused, colors }) => (
   </React.Fragment>
 );
 
+function MessagesStackScreen({ user }) {
+  const { colors } = useTheme();
+  return (
+    <MessagesStack.Navigator screenOptions={{ headerShown: false }}>
+      <MessagesStack.Screen name="Inbox">
+        {(props) => <ChatInboxScreen {...props} user={user} />}
+      </MessagesStack.Screen>
+      <MessagesStack.Screen name="ChatThread" component={ChatThreadScreen} />
+      <MessagesStack.Screen
+        name="Alerts"
+        component={MessagesScreen}
+        options={{
+          headerShown: true,
+          title: 'Alerts',
+          headerStyle: { backgroundColor: colors.backgroundElement },
+          headerTintColor: colors.text,
+        }}
+      />
+    </MessagesStack.Navigator>
+  );
+}
+
 function LandlordTabs({ user, onLogout }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const [chatUnread, setChatUnread] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    const loadUnread = async () => {
+      try {
+        const res = await conversationsAPI.summary();
+        if (active) setChatUnread(Number(res?.totalUnread) || 0);
+      } catch {
+        // badge is best-effort; the inbox surfaces real errors
+      }
+    };
+    loadUnread();
+    const timer = setInterval(loadUnread, 60000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, []);
 
   return (
     <Tab.Navigator
@@ -79,9 +123,15 @@ function LandlordTabs({ user, onLogout }) {
 
       <Tab.Screen
         name="Messages"
-        component={MessagesScreen}
-        options={{ tabBarLabel: 'Messages' }}
-      />
+        options={{
+          tabBarLabel: 'Messages',
+          tabBarBadge:
+            chatUnread > 0 ? (chatUnread > 99 ? '99+' : chatUnread) : undefined,
+          tabBarBadgeStyle: { backgroundColor: colors.primary, color: '#fff' },
+        }}
+      >
+        {() => <MessagesStackScreen user={user} />}
+      </Tab.Screen>
 
       <Tab.Screen
         name="Settings"
