@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -9,7 +9,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
 import { conversationsAPI } from '../services/api';
 import { Spacing, BorderRadius, FontSize } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
@@ -38,7 +37,13 @@ const initialsOf = (name) =>
     .slice(0, 2)
     .toUpperCase();
 
-export default function ChatInboxScreen({ navigation, user }) {
+export default function ChatInboxScreen({
+  navigation,
+  user,
+  tokenKey = 'token',
+  onOpenThread,
+  onOpenAlerts,
+}) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
 
@@ -52,7 +57,7 @@ export default function ChatInboxScreen({ navigation, user }) {
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     try {
-      const res = await conversationsAPI.list();
+      const res = await conversationsAPI.list(tokenKey);
       setConversations(Array.isArray(res?.conversations) ? res.conversations : []);
       setTotalUnread(Number(res?.totalUnread) || 0);
       setError('');
@@ -62,20 +67,22 @@ export default function ChatInboxScreen({ navigation, user }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [tokenKey]);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-      timerRef.current = setInterval(() => load(), POLL_MS);
-      return () => {
-        if (timerRef.current) clearInterval(timerRef.current);
-        timerRef.current = null;
-      };
-    }, [load])
-  );
+  useEffect(() => {
+    load();
+    timerRef.current = setInterval(() => load(), POLL_MS);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = null;
+    };
+  }, [load]);
 
   const openThread = (conversation) => {
+    if (onOpenThread) {
+      onOpenThread(conversation);
+      return;
+    }
     navigation.navigate('ChatThread', {
       id: conversation._id,
       peerName: conversation.peer?.name || 'Conversation',
@@ -91,17 +98,22 @@ export default function ChatInboxScreen({ navigation, user }) {
           <Text style={styles.title}>Messages</Text>
           <Text style={styles.subtitle}>
             {totalUnread > 0
-              ? `${totalUnread} unread · chats with tenants and buyers`
-              : 'Chats with tenants, buyers and guests'}
+              ? `${totalUnread} unread · chats about your listings`
+              : 'Chats about your listings'}
           </Text>
         </View>
-        <TouchableOpacity
-          style={styles.alertsBtn}
-          onPress={() => navigation.navigate('Alerts')}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.alertsBtnText}>Alerts</Text>
-        </TouchableOpacity>
+        {(onOpenAlerts || navigation) && (
+          <TouchableOpacity
+            style={styles.alertsBtn}
+            onPress={() => {
+              if (onOpenAlerts) onOpenAlerts();
+              else navigation.navigate('Alerts');
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.alertsBtnText}>Alerts</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {loading ? (
@@ -135,8 +147,8 @@ export default function ChatInboxScreen({ navigation, user }) {
               <View style={styles.empty}>
                 <Text style={styles.emptyTitle}>No conversations yet</Text>
                 <Text style={styles.emptyText}>
-                  When a tenant or buyer messages you about one of your listings,
-                  the chat appears here.
+                  When someone messages you about one of your listings, the chat
+                  appears here.
                 </Text>
               </View>
             ) : null

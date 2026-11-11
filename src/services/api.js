@@ -4,7 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 export const API_URL = CONFIG.API_URL;
 
 export const apiCall = async (endpoint, options = {}) => {
-  const { useAuth = true, ...fetchOptions } = options;
+  const { useAuth = true, tokenKey = 'token', ...fetchOptions } = options;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 35000); // 35s timeout
@@ -16,7 +16,7 @@ export const apiCall = async (endpoint, options = {}) => {
 
   if (useAuth) {
     try {
-      const token = await SecureStore.getItemAsync('token');
+      const token = await SecureStore.getItemAsync(tokenKey);
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
@@ -191,26 +191,29 @@ export const notificationsAPI = {
 
 // ── Listing conversations (owner <-> user chat) ───────────────────────────────
 export const conversationsAPI = {
-  list: () => apiCall('/conversations'),
-  summary: () => apiCall('/conversations/summary'),
-  start: ({ contextType, contextId, recipientId, message }) =>
+  list: (tokenKey = 'token') => apiCall('/conversations', { tokenKey }),
+  summary: (tokenKey = 'token') => apiCall('/conversations/summary', { tokenKey }),
+  start: ({ contextType, contextId, recipientId, message }, tokenKey = 'token') =>
     apiCall('/conversations', {
       method: 'POST',
       body: JSON.stringify({ contextType, contextId, recipientId, message }),
+      tokenKey,
     }),
-  messages: (conversationId, before) =>
+  messages: (conversationId, before, tokenKey = 'token') =>
     apiCall(
-      `/conversations/${conversationId}/messages${before ? `?before=${encodeURIComponent(before)}` : ''}`
+      `/conversations/${conversationId}/messages${before ? `?before=${encodeURIComponent(before)}` : ''}`,
+      { tokenKey }
     ),
-  send: (conversationId, text) =>
+  send: (conversationId, text, tokenKey = 'token') =>
     apiCall(`/conversations/${conversationId}/messages`, {
       method: 'POST',
       body: JSON.stringify({ text }),
+      tokenKey,
     }),
-  markRead: (conversationId) =>
-    apiCall(`/conversations/${conversationId}/read`, { method: 'PUT' }),
-  archive: (conversationId) =>
-    apiCall(`/conversations/${conversationId}`, { method: 'DELETE' }),
+  markRead: (conversationId, tokenKey = 'token') =>
+    apiCall(`/conversations/${conversationId}/read`, { method: 'PUT', tokenKey }),
+  archive: (conversationId, tokenKey = 'token') =>
+    apiCall(`/conversations/${conversationId}`, { method: 'DELETE', tokenKey }),
 };
 
 // ── Waitlist API ───────────────────────────────────────────────────────────────

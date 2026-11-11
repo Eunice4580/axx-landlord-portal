@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -11,7 +11,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
 import { conversationsAPI } from '../services/api';
 import { Spacing, BorderRadius, FontSize } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
@@ -32,10 +31,23 @@ const initialsOf = (name) =>
     .slice(0, 2)
     .toUpperCase();
 
-export default function ChatThreadScreen({ navigation, route }) {
+export default function ChatThreadScreen({
+  navigation,
+  route,
+  conversationId,
+  peerName: peerNameProp,
+  contextTitle: contextTitleProp,
+  myId: myIdProp,
+  tokenKey = 'token',
+  onBack,
+}) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
-  const { id, peerName, contextTitle, myId } = route.params || {};
+  const params = route?.params || {};
+  const id = params.id || conversationId;
+  const peerName = params.peerName || peerNameProp;
+  const contextTitle = params.contextTitle || contextTitleProp;
+  const myId = params.myId || myIdProp;
 
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
@@ -48,38 +60,36 @@ export default function ChatThreadScreen({ navigation, route }) {
 
   const load = useCallback(async () => {
     try {
-      const res = await conversationsAPI.messages(id);
+      const res = await conversationsAPI.messages(id, undefined, tokenKey);
       const next = Array.isArray(res?.messages) ? res.messages : [];
       setMessages(next);
       setError('');
       if (next.length !== lastCountRef.current) {
         lastCountRef.current = next.length;
-        conversationsAPI.markRead(id).catch(() => {});
+        conversationsAPI.markRead(id, tokenKey).catch(() => {});
       }
     } catch (e) {
       setError(e.message || 'Could not load this conversation.');
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, tokenKey]);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-      timerRef.current = setInterval(load, POLL_MS);
-      return () => {
-        if (timerRef.current) clearInterval(timerRef.current);
-        timerRef.current = null;
-      };
-    }, [load])
-  );
+  useEffect(() => {
+    load();
+    timerRef.current = setInterval(load, POLL_MS);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = null;
+    };
+  }, [load]);
 
   const handleSend = async () => {
     const body = text.trim();
     if (!body || sending) return;
     setSending(true);
     try {
-      const res = await conversationsAPI.send(id, body);
+      const res = await conversationsAPI.send(id, body, tokenKey);
       if (res?.message) {
         setMessages((prev) => [...prev, res.message]);
       }
@@ -100,7 +110,7 @@ export default function ChatThreadScreen({ navigation, route }) {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backBtn}
-          onPress={() => navigation.goBack()}
+          onPress={() => (onBack ? onBack() : navigation.goBack())}
           activeOpacity={0.7}
         >
           <Text style={styles.backText}>←</Text>

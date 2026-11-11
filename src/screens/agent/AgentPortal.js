@@ -39,9 +39,17 @@ import AgentNotificationsScreen   from './AgentNotificationsScreen';
 import AgentPackageScreen         from './AgentPackageScreen';
 import AgentQRPosterScreen        from './AgentQRPosterScreen';
 import RegisterAccommodationScreen from '../accommodation/RegisterAccommodationScreen';
+import PortalChatScreen from '../../components/PortalChatScreen';
+import ChatTabIcon from '../../components/ChatTabIcon';
+import useConversationUnread from '../../hooks/useConversationUnread';
+import {
+  registerForPushNotifications,
+  unregisterPushNotifications,
+} from '../../services/push';
 
 const TABS = [
   { key: 'overview', label: 'Dashboard', Icon: HomeIcon },
+  { key: 'messages', label: 'Messages',  Icon: ChatTabIcon },
   { key: 'account',  label: 'Account',   Icon: UserIcon },
 ];
 
@@ -55,6 +63,11 @@ export default function AgentPortal({ onBackToPortalSelector }) {
   const [editProperty, setEditProperty]   = useState(null); // house being edited
   const [accEditTarget, setAccEditTarget] = useState(null); // accommodation being edited
   const [qrPosterTarget, setQrPosterTarget] = useState(null); // house for QR (null = agent-wide)
+  const chatUnread = useConversationUnread('agent_token', !!user);
+
+  useEffect(() => {
+    if (user) registerForPushNotifications('agent_token');
+  }, [user]);
 
   useEffect(() => {
     (async () => {
@@ -84,6 +97,7 @@ export default function AgentPortal({ onBackToPortalSelector }) {
   const handleLoginSuccess   = (u) => { setUser(u); setActiveTab('overview'); setScreen('main'); };
   const handleRegisterSuccess = (u) => { setUser(u); setActiveTab('overview'); setScreen('main'); };
   const handleLogout         = async () => {
+    await unregisterPushNotifications('agent_token');
     await SecureStore.deleteItemAsync('agent_token');
     setUser(null);
     setScreen('login');
@@ -196,6 +210,9 @@ export default function AgentPortal({ onBackToPortalSelector }) {
           onGoToAccount={() => setActiveTab('account')}
         />
       )}
+      {activeTab === 'messages' && (
+        <PortalChatScreen user={user} tokenKey="agent_token" />
+      )}
       {activeTab === 'account' && (
         <AgentAccountScreen
           user={user}
@@ -217,7 +234,11 @@ export default function AgentPortal({ onBackToPortalSelector }) {
               onPress={() => setActiveTab(tab.key)}
               activeOpacity={0.7}
             >
-              <Icon color={active ? C.tabActive : C.tabInactive} size={22} />
+              <Icon
+                color={active ? C.tabActive : C.tabInactive}
+                size={22}
+                badge={tab.key === 'messages' ? chatUnread : 0}
+              />
               <Text style={[styles.tabLabel, { color: active ? C.tabActive : C.tabInactive }]}>
                 {tab.label}
               </Text>

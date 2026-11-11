@@ -14,17 +14,25 @@ import BiasharaAnalyticsScreen from './BiasharaAnalyticsScreen';
 import RegisterBusinessScreen from './RegisterBusinessScreen';
 import BiasharaRegisterScreen from './BiasharaRegisterScreen';
 import { GridIcon, StoreIcon, UserIcon, BarChartIcon } from './Icons';
+import PortalChatScreen from '../../components/PortalChatScreen';
+import ChatTabIcon from '../../components/ChatTabIcon';
+import useConversationUnread from '../../hooks/useConversationUnread';
+import {
+  registerForPushNotifications,
+  unregisterPushNotifications,
+} from '../../services/push';
 
 const ACCENT = '#e11d48';
 
 const TABS = [
   { key: 'overview',   label: 'Overview',    Icon: GridIcon       },
   { key: 'listings',   label: 'Businesses',  Icon: StoreIcon      },
+  { key: 'messages',   label: 'Messages',    Icon: ChatTabIcon    },
   { key: 'analytics',  label: 'Analytics',   Icon: BarChartIcon   },
   { key: 'account',    label: 'Account',     Icon: UserIcon       },
 ];
 
-function BottomTabBar({ activeTab, setActiveTab, colors, insets }) {
+function BottomTabBar({ activeTab, setActiveTab, colors, insets, chatUnread }) {
   return (
     <View style={[
       styles.tabBar,
@@ -48,7 +56,11 @@ function BottomTabBar({ activeTab, setActiveTab, colors, insets }) {
               styles.tabIconWrap,
               { backgroundColor: active ? ACCENT + '20' : 'transparent' },
             ]}>
-              <Icon color={active ? ACCENT : colors.textMuted} size={20} />
+              <Icon
+                color={active ? ACCENT : colors.textMuted}
+                size={20}
+                badge={tab.key === 'messages' ? chatUnread : 0}
+              />
             </View>
             <Text style={[styles.tabLabel, { color: active ? ACCENT : colors.textMuted }]}>
               {tab.label}
@@ -77,6 +89,11 @@ export default function BiasharaPortal({ onBackToPortalSelector }) {
   // Register/Edit flow — null = closed, undefined = new, business object = edit
   const [editTarget, setEditTarget] = useState(null); // null = form hidden
   const [showForm, setShowForm] = useState(false);
+  const chatUnread = useConversationUnread('biashara_token', !!user);
+
+  useEffect(() => {
+    if (user) registerForPushNotifications('biashara_token');
+  }, [user]);
 
   // Fetch all businesses owned by this user
   const refreshBusinesses = useCallback(async () => {
@@ -133,6 +150,7 @@ export default function BiasharaPortal({ onBackToPortalSelector }) {
   };
 
   const handleLogout = async () => {
+    await unregisterPushNotifications('biashara_token');
     await SecureStore.deleteItemAsync('biashara_token');
     setUser(null);
     setDisplayUser(null);
@@ -265,6 +283,9 @@ export default function BiasharaPortal({ onBackToPortalSelector }) {
           onRefresh={refreshBusinesses}
         />
       </View>
+      {activeTab === 'messages' && (
+        <PortalChatScreen user={shownUser} tokenKey="biashara_token" />
+      )}
       <View style={{ flex: 1, display: activeTab === 'analytics' ? 'flex' : 'none' }}>
         <BiasharaAnalyticsScreen
           businesses={businesses}
@@ -285,6 +306,7 @@ export default function BiasharaPortal({ onBackToPortalSelector }) {
         setActiveTab={setActiveTab}
         colors={colors}
         insets={insets}
+        chatUnread={chatUnread}
       />
     </View>
   );

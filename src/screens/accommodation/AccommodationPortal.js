@@ -12,6 +12,13 @@ import AccommodationAccountScreen from './AccommodationAccountScreen';
 import AccommodationRegisterScreen from './AccommodationRegisterScreen';
 // AccommodationListingsScreen removed — listings now live inside AccommodationOverviewScreen
 import { HomeIcon, CalendarIcon, UserIcon } from './AccomIcons';
+import PortalChatScreen from '../../components/PortalChatScreen';
+import ChatTabIcon from '../../components/ChatTabIcon';
+import useConversationUnread from '../../hooks/useConversationUnread';
+import {
+  registerForPushNotifications,
+  unregisterPushNotifications,
+} from '../../services/push';
 
 const ACCENT = '#e11d48';
 const API_BASE = 'https://axx-spaces-backend-1.onrender.com/api';
@@ -19,10 +26,11 @@ const API_BASE = 'https://axx-spaces-backend-1.onrender.com/api';
 const TABS = [
   { key: 'overview', label: 'Dashboard', Icon: HomeIcon },
   { key: 'bookings', label: 'Bookings', Icon: CalendarIcon },
+  { key: 'messages', label: 'Messages', Icon: ChatTabIcon },
   { key: 'account', label: 'Account', Icon: UserIcon },
 ];
 
-function BottomTabBar({ activeTab, setActiveTab, colors, insets }) {
+function BottomTabBar({ activeTab, setActiveTab, colors, insets, chatUnread }) {
   return (
     <View style={[
       styles.tabBar,
@@ -43,7 +51,11 @@ function BottomTabBar({ activeTab, setActiveTab, colors, insets }) {
             activeOpacity={0.7}
           >
             <View style={[styles.tabIconWrap, { backgroundColor: active ? ACCENT + '20' : 'transparent' }]}>
-              <Icon color={active ? ACCENT : colors.textMuted} size={20} />
+              <Icon
+                color={active ? ACCENT : colors.textMuted}
+                size={20}
+                badge={tab.key === 'messages' ? chatUnread : 0}
+              />
             </View>
             <Text style={[styles.tabLabel, { color: active ? ACCENT : colors.textMuted }]}>
               {tab.label}
@@ -63,6 +75,11 @@ export default function AccommodationPortal({ onBackToPortalSelector, navigation
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [showRegister, setShowRegister] = useState(false);
+  const chatUnread = useConversationUnread('accom_token', !!user);
+
+  useEffect(() => {
+    if (user) registerForPushNotifications('accom_token');
+  }, [user]);
 
   useEffect(() => {
     const restore = async () => {
@@ -99,6 +116,7 @@ export default function AccommodationPortal({ onBackToPortalSelector, navigation
   };
 
   const handleLogout = async () => {
+    await unregisterPushNotifications('accom_token');
     await SecureStore.deleteItemAsync('accom_token');
     setUser(null);
   };
@@ -143,6 +161,9 @@ export default function AccommodationPortal({ onBackToPortalSelector, navigation
         <AccommodationOverviewScreen user={user} onOpenAccount={() => setActiveTab('account')} />
       )}
       {activeTab === 'bookings' && <AccommodationBookingsScreen user={user} />}
+      {activeTab === 'messages' && (
+        <PortalChatScreen user={user} tokenKey="accom_token" />
+      )}
       {activeTab === 'account' && (
         <AccommodationAccountScreen
           user={user}
@@ -156,6 +177,7 @@ export default function AccommodationPortal({ onBackToPortalSelector, navigation
         setActiveTab={setActiveTab}
         colors={colors}
         insets={insets}
+        chatUnread={chatUnread}
       />
     </View>
   );
