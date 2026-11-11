@@ -19,6 +19,7 @@ import PaymentsScreen from './src/screens/PaymentsScreen';
 import MessagesScreen from './src/screens/MessagesScreen';
 import ChatInboxScreen from './src/screens/ChatInboxScreen';
 import ChatThreadScreen from './src/screens/ChatThreadScreen';
+import AppUpdateBanner from './src/components/AppUpdateBanner';
 import SettingsScreen from './src/screens/SettingsScreen';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -451,6 +452,7 @@ export default function App() {
     <SafeAreaProvider>
       <ThemeProvider>
         <AppContent />
+        <AppUpdateBanner />
       </ThemeProvider>
     </SafeAreaProvider>
   );
