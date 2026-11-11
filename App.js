@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import * as Updates from 'expo-updates';
+import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import * as SecureStore from 'expo-secure-store';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginScreen from './src/screens/LoginScreen';
@@ -22,6 +23,12 @@ import SettingsScreen from './src/screens/SettingsScreen';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { userAPI, conversationsAPI } from './src/services/api';
+import {
+  registerForPushNotifications,
+  unregisterPushNotifications,
+  isRemotePushRegistered,
+  notifyLocally,
+} from './src/services/push';
 import { View, ActivityIndicator } from 'react-native';
 import * as Linking from 'expo-linking';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
@@ -30,6 +37,17 @@ import AccommodationDetailScreen from './src/screens/accommodation/Accommodation
 const Tab = createBottomTabNavigator();
 const AccomStack = createNativeStackNavigator();
 const MessagesStack = createNativeStackNavigator();
+const navigationRef = createNavigationContainerRef();
+
+// Show message pushes as a banner even while the app is in the foreground.
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 // Simple SVG-free tab icons using Text (clean, no library needed)
 const TabIcon = ({ label, focused, colors }) => (
@@ -63,13 +81,34 @@ function LandlordTabs({ user, onLogout }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [chatUnread, setChatUnread] = useState(0);
+  const unreadRef = useRef(0);
+  const firstLoadRef = useRef(true);
 
   useEffect(() => {
     let active = true;
     const loadUnread = async () => {
       try {
         const res = await conversationsAPI.summary();
-        if (active) setChatUnread(Number(res?.totalUnread) || 0);
+        const next = Number(res?.totalUnread) || 0;
+        if (!active) return;
+        setChatUnread(next);
+        if (
+          !firstLoadRef.current &&
+          next > unreadRef.current &&
+          !isRemotePushRegistered()
+        ) {
+          const added = next - unreadRef.current;
+          notifyLocally({
+            title: 'New message',
+            body:
+              added === 1
+                ? 'You have a new message from a tenant or buyer.'
+                : `You have ${added} new messages.`,
+            data: { type: 'message' },
+          });
+        }
+        firstLoadRef.current = false;
+        unreadRef.current = next;
       } catch {
         // badge is best-effort; the inbox surfaces real errors
       }
@@ -150,6 +189,56 @@ function AppContent() {
   const [resetToken, setResetToken] = useState(null);
   const [showLandlordRegister, setShowLandlordRegister] = useState(false);
   const { isDark, colors } = useTheme();
+  const userRef = useRef(null);
+  const pendingChatRef = useRef(null);
+  userRef.current = user;
+
+  const openChatFromNotification = useCallback((data) => {
+    if (!data) return;
+    const userId = userRef.current?._id || userRef.current?.id;
+    if (!navigationRef.isReady() || !userId) {
+      pendingChatRef.current = data;
+      return;
+    }
+    pendingChatRef.current = null;
+    if (data.conversationId) {
+      navigationRef.navigate('Messages', {
+        screen: 'ChatThread',
+        params: {
+          id: data.conversationId,
+          peerName: data.senderName,
+          contextTitle: data.contextTitle,
+          myId: userId,
+        },
+      });
+    } else {
+      navigationRef.navigate('Messages', { screen: 'Inbox' });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    registerForPushNotifications();
+  }, [user]);
+
+  useEffect(() => {
+    const handleResponse = (response) => {
+      const data = response?.notification?.request?.content?.data || {};
+      if (data.type !== 'message') return;
+      openChatFromNotification(data);
+    };
+
+    const subscription = Notifications.addNotificationResponseReceivedListener(handleResponse);
+    Notifications.getLastNotificationResponseAsync()
+      .then((response) => {
+        if (!response) return;
+        handleResponse(response);
+        return Notifications.clearLastNotificationResponseAsync();
+      })
+      .catch(() => {});
+
+    return () => subscription.remove();
+  }, [openChatFromNotification]);
 
   // Check for OTA updates on every cold launch
   useEffect(() => {
@@ -219,6 +308,7 @@ function AppContent() {
   };
 
   const handleLogout = async () => {
+    await unregisterPushNotifications();
     await SecureStore.deleteItemAsync('token');
     setUser(null);
     // Return to portal selector after logout
@@ -342,7 +432,14 @@ function AppContent() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      ref={navigationRef}
+      onReady={() => {
+        if (pendingChatRef.current) {
+          openChatFromNotification(pendingChatRef.current);
+        }
+      }}
+    >
       <LandlordTabs user={user} onLogout={handleLogout} />
       <StatusBar style={isDark ? 'light' : 'dark'} />
     </NavigationContainer>

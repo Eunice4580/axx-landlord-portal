@@ -3,7 +3,7 @@
     "name": "Axxspace Manager",
     "slug": "axx-landlord-portal",
     "scheme": "axxlandlordportal",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -30,16 +30,15 @@
           "locationWhenInUsePermission": "Allow Axxspace Manager to use your location to fill in your property or business address."
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-notifications"
     ],
     "extra": {
       "eas": {
         "projectId": "57a10ac9-f207-4289-8bfc-d330c5e9ae0a"
       }
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.1.0",
     "updates": {
       "url": "https://u.expo.dev/57a10ac9-f207-4289-8bfc-d330c5e9ae0a"
     }
