@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   Image, View, Text, TouchableOpacity, StyleSheet, Animated,
 } from 'react-native';
@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Polyline } from 'react-native-svg';
 import { useTheme } from '../../context/ThemeContext';
 import { FontSize } from '../../constants/theme';
+import { checkForAppUpdate, openAppUpdatePage } from '../../services/appUpdate';
 
 const ChevronRight = ({ color, size = 18 }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -107,6 +108,17 @@ export default function PortalSelectorScreen({ onSelectPortal }) {
   const { colors } = useTheme();
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(-16)).current;
+  const [updateRelease, setUpdateRelease] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    checkForAppUpdate().then((release) => {
+      if (active && release) setUpdateRelease(release);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     Animated.parallel([
@@ -147,6 +159,25 @@ export default function PortalSelectorScreen({ onSelectPortal }) {
             Property · Business · Accommodation · Agents
           </Text>
         </Animated.View>
+
+        {/* ── Update reminder (only when a newer APK is published) ── */}
+        {updateRelease ? (
+          <TouchableOpacity
+            style={styles.updateNotice}
+            onPress={openAppUpdatePage}
+            activeOpacity={0.8}
+            accessibilityRole="link"
+            accessibilityLabel={`Update Axxspace Manager to version ${updateRelease.latestVersion} on the website`}
+          >
+            <View style={styles.updateNoticeBody}>
+              <Text style={styles.updateNoticeTitle}>
+                Update available: Axxspace Manager {updateRelease.latestVersion}
+              </Text>
+              <Text style={styles.updateNoticeLink}>Update on axxspace.com</Text>
+            </View>
+            <ChevronRight color="#1e3a5f" size={16} />
+          </TouchableOpacity>
+        ) : null}
 
         {/* ── Portal cards ── */}
         <View style={styles.cards}>
@@ -243,6 +274,32 @@ const styles = StyleSheet.create({
 
   /* ── Cards ── */
   cards: { flex: 1, justifyContent: 'center', gap: 12 },
+
+  /* ── Update reminder ── */
+  updateNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9',
+    borderWidth: 1,
+    borderColor: '#1e3a5f33',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginBottom: 14,
+  },
+  updateNoticeBody: { flex: 1, marginRight: 10 },
+  updateNoticeTitle: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#1e3a5f',
+    marginBottom: 2,
+  },
+  updateNoticeLink: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#1e3a5f',
+    textDecorationLine: 'underline',
+  },
 
   card: {
     flexDirection: 'row',

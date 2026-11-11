@@ -42,7 +42,6 @@ export async function checkForAppUpdate() {
   }
 }
 
-export function openAppUpdate(release) {
-  if (!release?.downloadUrl) return;
-  Linking.openURL(release.downloadUrl).catch(() => {});
+export function openAppUpdatePage() {
+  Linking.openURL(CONFIG.UPDATE_PAGE_URL).catch(() => {});
 }
