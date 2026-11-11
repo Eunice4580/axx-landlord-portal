@@ -10,7 +10,12 @@ export default function useConversationUnread(tokenKey = 'token', enabled = true
   const firstLoadRef = useRef(true);
 
   useEffect(() => {
-    if (!enabled) return undefined;
+    if (!enabled) {
+      firstLoadRef.current = true;
+      previousRef.current = 0;
+      setUnread(0);
+      return undefined;
+    }
     let active = true;
 
     const load = async () => {
