@@ -53,3 +53,4 @@ dist/
 *.backup
 assets/*-old.png
 assets/*.v1.png
+.claude/
