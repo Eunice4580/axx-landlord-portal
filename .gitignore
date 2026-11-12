@@ -54,3 +54,5 @@ dist/
 assets/*-old.png
 assets/*.v1.png
 .claude/
+CLAUDE.md
+AGENTS.md
